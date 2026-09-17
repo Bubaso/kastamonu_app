@@ -47,21 +47,33 @@ class AnasayfaDeposu {
   /// akışında ilçelerin yarısından fazlasına hiç haber gelmiyor. Tıklayınca
   /// boş liste çıkan bir süzgeç, olmayan süzgeçten kötüdür.
   ///
-  /// Sorgu `haber_ilce` üzerinden çalışıyor; RLS gereği bu tablo anon
-  /// kullanıcıya zaten yalnızca **onaylı bağ + yayındaki haber** satırlarını
-  /// veriyor. Yani süzgeç listesi kendiliğinden doğru.
+  /// Sorgu `haberler` üzerinden kuruluyor ve `durum='yayinda'` koşulu
+  /// AÇIKÇA yazılıyor.
+  ///
+  /// İlk sürümde bu liste doğrudan `haber_ilce`den çekiliyor ve süzgecin
+  /// RLS'ten geleceği varsayılıyordu. Yanlıştı: editör panelde oturum
+  /// açtığında ana sayfa da `authenticated` okuyor ve RLS'in dar kuralı
+  /// yerine panel kuralı uygulanıyor — süzgeçte yayımlanmamış haberlerin
+  /// ilçeleri belirdi. **RLS bir emniyet ağıdır, sorgu mantığı değildir;**
+  /// görünürlük koşulu sorguda da yazılmalı.
   Future<List<({String id, String ad})>> ilceler() async {
-    final y = await sb.from('haber_ilce').select('ilce_id, ilceler ( ad, sira )');
+    final y = await sb
+        .from('haberler')
+        .select('haber_ilce ( ilce_id, onaylandi, ilceler ( ad, sira ) )')
+        .eq('durum', 'yayinda');
     final gorulen = <String, ({String id, String ad, int sira})>{};
-    for (final j in (y as List)) {
-      final ilce = j['ilceler'];
-      if (ilce is! Map) continue;
-      final id = j['ilce_id'] as String;
-      gorulen[id] = (
-        id: id,
-        ad: ilce['ad'] as String? ?? '?',
-        sira: (ilce['sira'] as num?)?.toInt() ?? 99,
-      );
+    for (final h in (y as List)) {
+      for (final j in ((h['haber_ilce'] as List?) ?? const [])) {
+        if (j['onaylandi'] != true) continue;
+        final ilce = j['ilceler'];
+        if (ilce is! Map) continue;
+        final id = j['ilce_id'] as String;
+        gorulen[id] = (
+          id: id,
+          ad: ilce['ad'] as String? ?? '?',
+          sira: (ilce['sira'] as num?)?.toInt() ?? 99,
+        );
+      }
     }
     final liste = gorulen.values.toList()
       ..sort((a, b) => a.sira != b.sira
@@ -90,6 +102,6 @@ final yayindakilerSaglayici =
 });
 
 final ilceListesiSaglayici =
-    FutureProvider<List<({String id, String ad})>>((ref) {
+    FutureProvider.autoDispose<List<({String id, String ad})>>((ref) {
   return ref.watch(anasayfaDeposuSaglayici).ilceler();
 });
