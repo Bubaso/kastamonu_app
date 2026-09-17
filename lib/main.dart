@@ -2,11 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'cekirdek/supabase.dart';
-import 'ozellikler/inceleme/ekran/giris_ekrani.dart';
-import 'ozellikler/inceleme/ekran/inceleme_ekrani.dart';
+import 'cekirdek/tema.dart';
+import 'cekirdek/yonlendirme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,7 +21,8 @@ class KastamonuApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    if (!SupabaseAyar.yapilandirildi) return const _AyarUyarisi();
+    return MaterialApp.router(
       title: 'Kastamonu Haber',
       debugShowCheckedModeBanner: false,
       locale: const Locale('tr'),
@@ -32,39 +32,8 @@ class KastamonuApp extends StatelessWidget {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      theme: ThemeData(
-        useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF0D6B5A),
-          surface: const Color(0xFFF7F8F6),
-        ),
-        cardTheme: CardThemeData(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-            side: const BorderSide(color: Color(0xFFD6DDD8)),
-          ),
-        ),
-      ),
-      home: const _Kapi(),
-    );
-  }
-}
-
-/// Oturum kapısı. Anahtar yoksa yapılandırma uyarısı, oturum yoksa giriş.
-class _Kapi extends StatelessWidget {
-  const _Kapi();
-
-  @override
-  Widget build(BuildContext context) {
-    if (!SupabaseAyar.yapilandirildi) return const _AyarUyarisi();
-    return StreamBuilder<AuthState>(
-      stream: sb.auth.onAuthStateChange,
-      builder: (context, anlik) {
-        final oturum = sb.auth.currentSession;
-        if (oturum == null) return const GirisEkrani();
-        return const IncelemeEkrani();
-      },
+      theme: Tema.olustur(),
+      routerConfig: yonlendirici,
     );
   }
 }
@@ -81,8 +50,7 @@ class _AyarUyarisi extends StatelessWidget {
             padding: EdgeInsets.all(32),
             child: Text(
               'SUPABASE_ANON_KEY verilmedi.\n\n'
-              'Çalıştırma:\n'
-              'flutter run -d chrome --dart-define=SUPABASE_ANON_KEY=...',
+              'Çalıştırma: ./calistir.sh',
               textAlign: TextAlign.center,
             ),
           ),

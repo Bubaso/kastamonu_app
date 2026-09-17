@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../../cekirdek/supabase.dart';
 
 import '../veri/inceleme_deposu.dart';
 import 'haber_karti.dart';
@@ -29,11 +32,24 @@ class IncelemeEkrani extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Kastamonu Haber — Panel'),
+        leading: IconButton(
+          onPressed: () => context.go('/'),
+          icon: const Icon(Icons.home_outlined),
+          tooltip: 'Ana sayfa',
+        ),
         actions: [
           IconButton(
             onPressed: tazele,
             icon: const Icon(Icons.refresh),
             tooltip: 'Tazele',
+          ),
+          IconButton(
+            onPressed: () async {
+              await sb.auth.signOut();
+              if (context.mounted) context.go('/');
+            },
+            icon: const Icon(Icons.logout),
+            tooltip: 'Çıkış',
           ),
           const SizedBox(width: 6),
         ],
