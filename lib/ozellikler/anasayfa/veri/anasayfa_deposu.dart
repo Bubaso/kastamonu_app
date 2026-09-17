@@ -76,9 +76,10 @@ class AnasayfaDeposu {
       }
     }
     final liste = gorulen.values.toList()
-      ..sort((a, b) => a.sira != b.sira
-          ? a.sira.compareTo(b.sira)
-          : a.ad.compareTo(b.ad));
+      ..sort(
+        (a, b) =>
+            a.sira != b.sira ? a.sira.compareTo(b.sira) : a.ad.compareTo(b.ad),
+      );
     return liste.map((e) => (id: e.id, ad: e.ad)).toList();
   }
 }
@@ -92,16 +93,18 @@ class IlceSuzgeci extends Notifier<String?> {
   void sec(String? id) => state = id;
 }
 
-final ilceSuzgeciSaglayici =
-    NotifierProvider<IlceSuzgeci, String?>(IlceSuzgeci.new);
+final ilceSuzgeciSaglayici = NotifierProvider<IlceSuzgeci, String?>(
+  IlceSuzgeci.new,
+);
 
-final yayindakilerSaglayici =
-    FutureProvider.autoDispose<List<Haber>>((ref) async {
+final yayindakilerSaglayici = FutureProvider.autoDispose<List<Haber>>((
+  ref,
+) async {
   final ilce = ref.watch(ilceSuzgeciSaglayici);
   return ref.watch(anasayfaDeposuSaglayici).yayindakiler(ilceId: ilce);
 });
 
 final ilceListesiSaglayici =
     FutureProvider.autoDispose<List<({String id, String ad})>>((ref) {
-  return ref.watch(anasayfaDeposuSaglayici).ilceler();
-});
+      return ref.watch(anasayfaDeposuSaglayici).ilceler();
+    });

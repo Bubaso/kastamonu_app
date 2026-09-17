@@ -23,15 +23,23 @@ class AnasayfaEkrani extends ConsumerWidget {
             const _IlceCubugu(),
             haberler.when(
               loading: () => const SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(child: CircularProgressIndicator())),
+                hasScrollBody: false,
+                child: Center(child: CircularProgressIndicator()),
+              ),
               error: (h, _) => SliverFillRemaining(
-                  hasScrollBody: false,
-                  child: Center(child: Padding(
-                      padding: const EdgeInsets.all(28), child: Text('$h')))),
+                hasScrollBody: false,
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(28),
+                    child: Text('$h'),
+                  ),
+                ),
+              ),
               data: (liste) => liste.isEmpty
                   ? const SliverFillRemaining(
-                      hasScrollBody: false, child: _Bos())
+                      hasScrollBody: false,
+                      child: _Bos(),
+                    )
                   : _Akis(liste: liste),
             ),
             const SliverToBoxAdapter(child: _Alt()),
@@ -59,29 +67,37 @@ class _Kunye extends StatelessWidget {
             constraints: const BoxConstraints(maxWidth: 1080),
             child: Padding(
               padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
-              child: Row(children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text('Kastamonu Haber',
-                        style: t.textTheme.displaySmall?.copyWith(fontSize: 30)),
-                    const SizedBox(height: 3),
-                    Text(
-                      DateFormat("d MMMM y, EEEE", 'tr').format(DateTime.now()),
-                      style: t.textTheme.labelMedium
-                          ?.copyWith(color: Tema.solgun),
-                    ),
-                  ],
-                ),
-                const Spacer(),
-                TextButton.icon(
-                  onPressed: () => context.go('/panel'),
-                  icon: const Icon(Icons.dashboard_outlined, size: 17),
-                  label: const Text('Panel'),
-                  style: TextButton.styleFrom(foregroundColor: Tema.solgun),
-                ),
-              ]),
+              child: Row(
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        'Kastamonu Haber',
+                        style: t.textTheme.displaySmall?.copyWith(fontSize: 30),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        DateFormat(
+                          "d MMMM y, EEEE",
+                          'tr',
+                        ).format(DateTime.now()),
+                        style: t.textTheme.labelMedium?.copyWith(
+                          color: Tema.solgun,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Spacer(),
+                  TextButton.icon(
+                    onPressed: () => context.go('/panel'),
+                    icon: const Icon(Icons.dashboard_outlined, size: 17),
+                    label: const Text('Panel'),
+                    style: TextButton.styleFrom(foregroundColor: Tema.solgun),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -118,8 +134,9 @@ class _IlceCubugu extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 18),
                   children: [
                     _cip(context, ref, 'İl geneli', null, secili == null),
-                    ...liste.map((i) =>
-                        _cip(context, ref, i.ad, i.id, secili == i.id)),
+                    ...liste.map(
+                      (i) => _cip(context, ref, i.ad, i.id, secili == i.id),
+                    ),
                   ],
                 ),
               ),
@@ -136,10 +153,14 @@ class _IlceCubugu extends ConsumerWidget {
       child: ChoiceChip(
         selected: sec,
         onSelected: (_) => ref.read(ilceSuzgeciSaglayici.notifier).sec(id),
-        label: Text(ad, style: TextStyle(
+        label: Text(
+          ad,
+          style: TextStyle(
             fontSize: 12.5,
             color: sec ? Colors.white : Tema.murekkep,
-            fontWeight: sec ? FontWeight.w600 : FontWeight.w400)),
+            fontWeight: sec ? FontWeight.w600 : FontWeight.w400,
+          ),
+        ),
         selectedColor: Tema.patina,
         backgroundColor: Colors.white,
         side: BorderSide(color: sec ? Tema.patina : Tema.cizgi),
@@ -165,26 +186,28 @@ class _Akis extends StatelessWidget {
           constraints: const BoxConstraints(maxWidth: 1080),
           child: Padding(
             padding: const EdgeInsets.fromLTRB(18, 24, 18, 8),
-            child: Column(children: [
-              _Manset(haber: manset),
-              if (kalan.isNotEmpty) ...[
-                const SizedBox(height: 26),
-                const _BolumBasligi('Diğer haberler'),
-                const SizedBox(height: 14),
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: genis ? 3 : 1,
-                    mainAxisSpacing: 16,
-                    crossAxisSpacing: 16,
-                    mainAxisExtent: 196,
+            child: Column(
+              children: [
+                _Manset(haber: manset),
+                if (kalan.isNotEmpty) ...[
+                  const SizedBox(height: 26),
+                  const _BolumBasligi('Diğer haberler'),
+                  const SizedBox(height: 14),
+                  GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: genis ? 3 : 1,
+                      mainAxisSpacing: 16,
+                      crossAxisSpacing: 16,
+                      mainAxisExtent: 196,
+                    ),
+                    itemCount: kalan.length,
+                    itemBuilder: (c, i) => _Kutu(haber: kalan[i]),
                   ),
-                  itemCount: kalan.length,
-                  itemBuilder: (c, i) => _Kutu(haber: kalan[i]),
-                ),
+                ],
               ],
-            ]),
+            ),
           ),
         ),
       ),
@@ -198,14 +221,21 @@ class _BolumBasligi extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(children: [
-      Text(metin.toUpperCase(),
+    return Row(
+      children: [
+        Text(
+          metin.toUpperCase(),
           style: const TextStyle(
-              fontSize: 11.5, fontWeight: FontWeight.w700,
-              letterSpacing: 1.2, color: Tema.solgun)),
-      const SizedBox(width: 12),
-      const Expanded(child: Divider()),
-    ]);
+            fontSize: 11.5,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.2,
+            color: Tema.solgun,
+          ),
+        ),
+        const SizedBox(width: 12),
+        const Expanded(child: Divider()),
+      ],
+    );
   }
 }
 
@@ -217,22 +247,34 @@ class _Manset extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context);
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(24, 22, 24, 20),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          _Etiketler(haber: haber, buyuk: true),
-          const SizedBox(height: 12),
-          Text(haber.baslik,
-              style: t.textTheme.displaySmall?.copyWith(fontSize: 27)),
-          if ((haber.spot ?? '').isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Text(haber.spot!,
-                style: t.textTheme.bodyLarge
-                    ?.copyWith(color: Tema.solgun, height: 1.5)),
-          ],
-          const SizedBox(height: 14),
-          _KaynakSatiri(haber: haber),
-        ]),
+      child: InkWell(
+        onTap: () => context.go('/haber/${haber.slug}'),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(24, 22, 24, 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _Etiketler(haber: haber, buyuk: true),
+              const SizedBox(height: 12),
+              Text(
+                haber.baslik,
+                style: t.textTheme.displaySmall?.copyWith(fontSize: 27),
+              ),
+              if ((haber.spot ?? '').isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Text(
+                  haber.spot!,
+                  style: t.textTheme.bodyLarge?.copyWith(
+                    color: Tema.solgun,
+                    height: 1.5,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 14),
+              _KaynakSatiri(haber: haber),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -246,25 +288,37 @@ class _Kutu extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = Theme.of(context);
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          _Etiketler(haber: haber),
-          const SizedBox(height: 9),
-          Text(haber.baslik,
-              maxLines: 3,
-              overflow: TextOverflow.ellipsis,
-              style: t.textTheme.titleMedium?.copyWith(fontSize: 16)),
-          const SizedBox(height: 7),
-          Expanded(
-            child: Text(haber.spot ?? '',
+      child: InkWell(
+        onTap: () => context.go('/haber/${haber.slug}'),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _Etiketler(haber: haber),
+              const SizedBox(height: 9),
+              Text(
+                haber.baslik,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
-                style: t.textTheme.bodySmall
-                    ?.copyWith(color: Tema.solgun, height: 1.45)),
+                style: t.textTheme.titleMedium?.copyWith(fontSize: 16),
+              ),
+              const SizedBox(height: 7),
+              Expanded(
+                child: Text(
+                  haber.spot ?? '',
+                  maxLines: 3,
+                  overflow: TextOverflow.ellipsis,
+                  style: t.textTheme.bodySmall?.copyWith(
+                    color: Tema.solgun,
+                    height: 1.45,
+                  ),
+                ),
+              ),
+              _KaynakSatiri(haber: haber, kucuk: true),
+            ],
           ),
-          _KaynakSatiri(haber: haber, kucuk: true),
-        ]),
+        ),
       ),
     );
   }
@@ -278,27 +332,40 @@ class _Etiketler extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ilce = haber.ilceler.where((b) => b.onaylandi).map((b) => b.ad);
-    return Wrap(spacing: 8, runSpacing: 5, crossAxisAlignment:
-        WrapCrossAlignment.center, children: [
-      if (haber.kategoriAd != null)
-        Text(haber.kategoriAd!.toUpperCase(),
+    return Wrap(
+      spacing: 8,
+      runSpacing: 5,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        if (haber.kategoriAd != null)
+          Text(
+            haber.kategoriAd!.toUpperCase(),
             style: TextStyle(
-                fontSize: buyuk ? 11.5 : 10.5,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.9,
-                color: Tema.patina)),
-      ...ilce.map((ad) => Container(
+              fontSize: buyuk ? 11.5 : 10.5,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.9,
+              color: Tema.patina,
+            ),
+          ),
+        ...ilce.map(
+          (ad) => Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
               border: Border.all(color: Tema.cizgi),
               borderRadius: BorderRadius.circular(3),
             ),
-            child: Text(ad,
-                style: const TextStyle(fontSize: 10.5, color: Tema.solgun)),
-          )),
-      Text(DateFormat('d MMM HH:mm', 'tr').format(haber.olusturuldu),
-          style: const TextStyle(fontSize: 10.5, color: Tema.solgun)),
-    ]);
+            child: Text(
+              ad,
+              style: const TextStyle(fontSize: 10.5, color: Tema.solgun),
+            ),
+          ),
+        ),
+        Text(
+          DateFormat('d MMM HH:mm', 'tr').format(haber.olusturuldu),
+          style: const TextStyle(fontSize: 10.5, color: Tema.solgun),
+        ),
+      ],
+    );
   }
 }
 
@@ -310,18 +377,20 @@ class _KaynakSatiri extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(children: [
-      Icon(Icons.link, size: kucuk ? 12 : 14, color: Tema.solgun),
-      const SizedBox(width: 5),
-      Flexible(
-        child: Text(
-          'Kaynak: ${haber.kaynakAdi}'
-          '${haber.yayinci?.isNotEmpty == true ? " · ${haber.yayinci}" : ""}',
-          overflow: TextOverflow.ellipsis,
-          style: TextStyle(fontSize: kucuk ? 10.5 : 12, color: Tema.solgun),
+    return Row(
+      children: [
+        Icon(Icons.link, size: kucuk ? 12 : 14, color: Tema.solgun),
+        const SizedBox(width: 5),
+        Flexible(
+          child: Text(
+            'Kaynak: ${haber.kaynakAdi}'
+            '${haber.yayinci?.isNotEmpty == true ? " · ${haber.yayinci}" : ""}',
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(fontSize: kucuk ? 10.5 : 12, color: Tema.solgun),
+          ),
         ),
-      ),
-    ]);
+      ],
+    );
   }
 }
 
@@ -333,15 +402,22 @@ class _Bos extends StatelessWidget {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(40),
-        child: Column(mainAxisSize: MainAxisSize.min, children: const [
-          Icon(Icons.article_outlined, size: 44, color: Tema.solgun),
-          SizedBox(height: 14),
-          Text('Bu seçimde yayımlanmış haber yok.',
-              style: TextStyle(color: Tema.solgun)),
-          SizedBox(height: 6),
-          Text('Panelden haber yayınlandığında burada görünür.',
-              style: TextStyle(color: Tema.solgun, fontSize: 12.5)),
-        ]),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: const [
+            Icon(Icons.article_outlined, size: 44, color: Tema.solgun),
+            SizedBox(height: 14),
+            Text(
+              'Bu seçimde yayımlanmış haber yok.',
+              style: TextStyle(color: Tema.solgun),
+            ),
+            SizedBox(height: 6),
+            Text(
+              'Panelden haber yayınlandığında burada görünür.',
+              style: TextStyle(color: Tema.solgun, fontSize: 12.5),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -357,15 +433,18 @@ class _Alt extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 1080),
         child: Padding(
           padding: const EdgeInsets.fromLTRB(20, 34, 20, 40),
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: const [
-            Divider(),
-            SizedBox(height: 14),
-            Text(
-              'Kastamonu Haber · haberler kaynak gösterilerek derlenmektedir. '
-              'Her haberin künyesinde özgün kaynağı belirtilir.',
-              style: TextStyle(fontSize: 12, color: Tema.solgun, height: 1.5),
-            ),
-          ]),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: const [
+              Divider(),
+              SizedBox(height: 14),
+              Text(
+                'Kastamonu Haber · haberler kaynak gösterilerek derlenmektedir. '
+                'Her haberin künyesinde özgün kaynağı belirtilir.',
+                style: TextStyle(fontSize: 12, color: Tema.solgun, height: 1.5),
+              ),
+            ],
+          ),
         ),
       ),
     );

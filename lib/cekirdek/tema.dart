@@ -20,26 +20,36 @@ class Tema {
   static ThemeData olustur() {
     final base = ThemeData(
       useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: patina,
-        surface: zemin,
-      ),
+      colorScheme: ColorScheme.fromSeed(seedColor: patina, surface: zemin),
     );
     return base.copyWith(
       scaffoldBackgroundColor: zemin,
       textTheme: base.textTheme.copyWith(
         displaySmall: const TextStyle(
-            fontFamily: serif, fontWeight: FontWeight.w700, height: 1.15,
-            letterSpacing: -0.5, color: murekkep),
+          fontFamily: serif,
+          fontWeight: FontWeight.w700,
+          height: 1.15,
+          letterSpacing: -0.5,
+          color: murekkep,
+        ),
         headlineSmall: const TextStyle(
-            fontFamily: serif, fontWeight: FontWeight.w700, height: 1.22,
-            color: murekkep),
+          fontFamily: serif,
+          fontWeight: FontWeight.w700,
+          height: 1.22,
+          color: murekkep,
+        ),
         titleLarge: const TextStyle(
-            fontFamily: serif, fontWeight: FontWeight.w700, height: 1.25,
-            color: murekkep),
+          fontFamily: serif,
+          fontWeight: FontWeight.w700,
+          height: 1.25,
+          color: murekkep,
+        ),
         titleMedium: const TextStyle(
-            fontFamily: serif, fontWeight: FontWeight.w700, height: 1.3,
-            color: murekkep),
+          fontFamily: serif,
+          fontWeight: FontWeight.w700,
+          height: 1.3,
+          color: murekkep,
+        ),
       ),
       cardTheme: CardThemeData(
         elevation: 0,

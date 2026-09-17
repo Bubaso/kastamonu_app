@@ -60,9 +60,12 @@ class IncelemeEkrani extends ConsumerWidget {
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
             decoration: BoxDecoration(
-              color: t.colorScheme.surfaceContainerHighest.withValues(alpha: .4),
+              color: t.colorScheme.surfaceContainerHighest.withValues(
+                alpha: .4,
+              ),
               border: Border(
-                  bottom: BorderSide(color: t.dividerColor.withValues(alpha: .5))),
+                bottom: BorderSide(color: t.dividerColor.withValues(alpha: .5)),
+              ),
             ),
             child: Wrap(
               spacing: 8,
@@ -74,14 +77,17 @@ class IncelemeEkrani extends ConsumerWidget {
                   selected: secili,
                   onSelected: (_) =>
                       ref.read(durumSaglayici.notifier).sec(d.$1),
-                  avatar: Icon(d.$3,
-                      size: 16,
-                      color: secili ? Colors.white : t.hintColor),
+                  avatar: Icon(
+                    d.$3,
+                    size: 16,
+                    color: secili ? Colors.white : t.hintColor,
+                  ),
                   label: Text(n == null ? d.$2 : '${d.$2}  $n'),
                   selectedColor: const Color(0xFF0D6B5A),
                   labelStyle: TextStyle(
-                      color: secili ? Colors.white : null,
-                      fontWeight: secili ? FontWeight.w600 : null),
+                    color: secili ? Colors.white : null,
+                    fontWeight: secili ? FontWeight.w600 : null,
+                  ),
                 );
               }).toList(),
             ),
@@ -106,8 +112,12 @@ class IncelemeEkrani extends ConsumerWidget {
                             key: ValueKey(h.id),
                             haber: h,
                             onKaydet: (b, s, g) async {
-                              await depo.alanlariKaydet(h.id,
-                                  baslik: b, spot: s, govde: g);
+                              await depo.alanlariKaydet(
+                                h.id,
+                                baslik: b,
+                                spot: s,
+                                govde: g,
+                              );
                               tazele();
                             },
                             onYayinla: () async {
@@ -145,42 +155,50 @@ class IncelemeEkrani extends ConsumerWidget {
   }
 
   Widget _bos(ThemeData t, String durum) => Center(
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(Icons.done_all, size: 44, color: t.hintColor),
-          const SizedBox(height: 12),
-          Text(
-            durum == 'inceleme'
-                ? 'İnceleme masası boş.\nHat yeni haber getirdiğinde burada görünecek.'
-                : 'Bu listede kayıt yok.',
-            textAlign: TextAlign.center,
-            style: t.textTheme.bodyMedium?.copyWith(color: t.hintColor),
-          ),
-        ]),
-      );
+    child: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.done_all, size: 44, color: t.hintColor),
+        const SizedBox(height: 12),
+        Text(
+          durum == 'inceleme'
+              ? 'İnceleme masası boş.\nHat yeni haber getirdiğinde burada görünecek.'
+              : 'Bu listede kayıt yok.',
+          textAlign: TextAlign.center,
+          style: t.textTheme.bodyMedium?.copyWith(color: t.hintColor),
+        ),
+      ],
+    ),
+  );
 
   Widget _hata(BuildContext c, Object hata, VoidCallback tazele) {
-    final yetki = hata.toString().contains('row-level security') ||
+    final yetki =
+        hata.toString().contains('row-level security') ||
         hata.toString().contains('JWT') ||
         hata.toString().contains('permission');
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(28),
-        child: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Icon(Icons.error_outline, size: 40, color: Color(0xFFA84A18)),
-          const SizedBox(height: 12),
-          Text(
-            yetki
-                ? 'Yetki hatası: inceleme masasını görmek için oturum açmak '
-                    'gerekiyor.\nRLS yalnızca yayındaki haberi anonim açıyor.'
-                : 'Veri alınamadı.\n$hata',
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          FilledButton.icon(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.error_outline, size: 40, color: Color(0xFFA84A18)),
+            const SizedBox(height: 12),
+            Text(
+              yetki
+                  ? 'Yetki hatası: inceleme masasını görmek için oturum açmak '
+                        'gerekiyor.\nRLS yalnızca yayındaki haberi anonim açıyor.'
+                  : 'Veri alınamadı.\n$hata',
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            FilledButton.icon(
               onPressed: tazele,
               icon: const Icon(Icons.refresh),
-              label: const Text('Yeniden dene')),
-        ]),
+              label: const Text('Yeniden dene'),
+            ),
+          ],
+        ),
       ),
     );
   }

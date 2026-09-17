@@ -44,11 +44,10 @@ class IncelemeDeposu {
     required String spot,
     required String govde,
   }) async {
-    await sb.from('haberler').update({
-      'baslik': baslik,
-      'spot': spot,
-      'govde': govde,
-    }).eq('id', id);
+    await sb
+        .from('haberler')
+        .update({'baslik': baslik, 'spot': spot, 'govde': govde})
+        .eq('id', id);
   }
 
   /// Yayına al. `yayinlandi` damgasını tetikleyici koyuyor (migration 0002).
@@ -57,10 +56,10 @@ class IncelemeDeposu {
   }
 
   Future<void> reddet(String id, String? gerekce) async {
-    await sb.from('haberler').update({
-      'durum': 'reddedildi',
-      'inceleme_notu': gerekce,
-    }).eq('id', id);
+    await sb
+        .from('haberler')
+        .update({'durum': 'reddedildi', 'inceleme_notu': gerekce})
+        .eq('id', id);
   }
 
   Future<void> incelemeyeAl(String id) async {
@@ -97,8 +96,7 @@ class DurumSecimi extends Notifier<String> {
   void sec(String durum) => state = durum;
 }
 
-final durumSaglayici =
-    NotifierProvider<DurumSecimi, String>(DurumSecimi.new);
+final durumSaglayici = NotifierProvider<DurumSecimi, String>(DurumSecimi.new);
 
 final haberlerSaglayici = FutureProvider.autoDispose<List<Haber>>((ref) async {
   final durum = ref.watch(durumSaglayici);

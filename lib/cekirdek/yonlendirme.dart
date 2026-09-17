@@ -1,6 +1,7 @@
 import 'package:go_router/go_router.dart';
 
 import '../ozellikler/anasayfa/ekran/anasayfa_ekrani.dart';
+import '../ozellikler/haber/ekran/haber_ekrani.dart';
 import '../ozellikler/inceleme/ekran/giris_ekrani.dart';
 import '../ozellikler/inceleme/ekran/inceleme_ekrani.dart';
 import 'supabase.dart';
@@ -22,6 +23,10 @@ final yonlendirici = GoRouter(
   },
   routes: [
     GoRoute(path: '/', builder: (c, s) => const AnasayfaEkrani()),
+    GoRoute(
+      path: '/haber/:slug',
+      builder: (c, s) => HaberEkrani(slug: s.pathParameters['slug']!),
+    ),
     GoRoute(path: '/giris', builder: (c, s) => const GirisEkrani()),
     GoRoute(path: '/panel', builder: (c, s) => const IncelemeEkrani()),
   ],

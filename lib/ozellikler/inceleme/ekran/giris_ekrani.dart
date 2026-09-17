@@ -56,50 +56,65 @@ class _GirisEkraniState extends State<GirisEkrani> {
           constraints: const BoxConstraints(maxWidth: 380),
           child: Padding(
             padding: const EdgeInsets.all(28),
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Text('Kastamonu Haber',
-                  style: t.textTheme.headlineSmall
-                      ?.copyWith(fontWeight: FontWeight.w600)),
-              const SizedBox(height: 4),
-              Text('Editör paneli',
-                  style: t.textTheme.bodyMedium?.copyWith(color: t.hintColor)),
-              const SizedBox(height: 26),
-              TextField(
-                controller: _eposta,
-                autofillHints: const [AutofillHints.email],
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(
-                    labelText: 'E-posta', border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _parola,
-                obscureText: true,
-                autofillHints: const [AutofillHints.password],
-                onSubmitted: (_) => _girisYap(),
-                decoration: const InputDecoration(
-                    labelText: 'Parola', border: OutlineInputBorder()),
-              ),
-              if (_hata != null) ...[
-                const SizedBox(height: 12),
-                Text(_hata!,
-                    style: TextStyle(color: t.colorScheme.error, fontSize: 13),
-                    textAlign: TextAlign.center),
-              ],
-              const SizedBox(height: 18),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: _mesgul ? null : _girisYap,
-                  child: _mesgul
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Text('Giriş'),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Kastamonu Haber',
+                  style: t.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
-              ),
-            ]),
+                const SizedBox(height: 4),
+                Text(
+                  'Editör paneli',
+                  style: t.textTheme.bodyMedium?.copyWith(color: t.hintColor),
+                ),
+                const SizedBox(height: 26),
+                TextField(
+                  controller: _eposta,
+                  autofillHints: const [AutofillHints.email],
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: const InputDecoration(
+                    labelText: 'E-posta',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _parola,
+                  obscureText: true,
+                  autofillHints: const [AutofillHints.password],
+                  onSubmitted: (_) => _girisYap(),
+                  decoration: const InputDecoration(
+                    labelText: 'Parola',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                if (_hata != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    _hata!,
+                    style: TextStyle(color: t.colorScheme.error, fontSize: 13),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+                const SizedBox(height: 18),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: _mesgul ? null : _girisYap,
+                    child: _mesgul
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Text('Giriş'),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

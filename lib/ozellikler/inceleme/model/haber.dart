@@ -56,7 +56,7 @@ class Haber {
       durum: j['durum'] as String? ?? 'inceleme',
       olusturuldu:
           DateTime.tryParse(j['olusturuldu'] as String? ?? '')?.toLocal() ??
-              DateTime.now(),
+          DateTime.now(),
       ilceler: baglar
           .map((b) => IlceBagi.jsondan(b as Map<String, dynamic>))
           .toList(),
@@ -87,12 +87,12 @@ class IlceBagi {
   bool get modelMutabakati => kaynak == 'model+sozluk';
 
   String get kaynakEtiketi => switch (kaynak) {
-        'model+sozluk' => 'model + sözlük',
-        'sozluk' => 'sözlük',
-        'yalniz_model' => 'yalnız model',
-        'editor' => 'editör',
-        _ => kaynak,
-      };
+    'model+sozluk' => 'model + sözlük',
+    'sozluk' => 'sözlük',
+    'yalniz_model' => 'yalnız model',
+    'editor' => 'editör',
+    _ => kaynak,
+  };
 
   factory IlceBagi.jsondan(Map<String, dynamic> j) {
     final ilce = j['ilceler'];
