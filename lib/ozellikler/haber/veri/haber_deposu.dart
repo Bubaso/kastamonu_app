@@ -74,6 +74,23 @@ class HaberDeposu {
       }
     }
 
+    // Üçüncü yedek: ne aynı ilçeden ne aynı kategoriden bir şey yoksa
+    // son haberler. Küçük bir portalda ilk haftalarda bu durum kural,
+    // istisna değil — bölümü boş bırakmak sayfayı yarım gösteriyor.
+    if (toplanan.isEmpty) {
+      final y = await sb
+          .from('haberler')
+          .select(_secim)
+          .eq('durum', 'yayinda')
+          .neq('id', haber.id)
+          .order('olusturuldu', ascending: false)
+          .limit(adet);
+      for (final j in (y as List)) {
+        final h = Haber.jsondan(j as Map<String, dynamic>);
+        toplanan[h.id] = h;
+      }
+    }
+
     return toplanan.values.take(adet).toList();
   }
 }

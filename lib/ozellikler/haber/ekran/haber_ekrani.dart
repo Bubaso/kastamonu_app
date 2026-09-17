@@ -99,7 +99,25 @@ class _Govde extends ConsumerWidget {
                       error: (_, _) => const SizedBox.shrink(),
                       data: (liste) => liste.isEmpty
                           ? const SizedBox.shrink()
-                          : _Ilgililer(liste: liste),
+                          : _Ilgililer(
+                              liste: liste,
+                              // Aynı ilçeden bir şey geldiyse başlık onu
+                              // söylesin; gelmediyse "ilgili" demek yanıltıcı.
+                              baslik:
+                                  liste.any(
+                                    (h) => h.ilceler.any(
+                                      (b) =>
+                                          b.onaylandi &&
+                                          haber.ilceler.any(
+                                            (k) =>
+                                                k.onaylandi &&
+                                                k.ilceId == b.ilceId,
+                                          ),
+                                    ),
+                                  )
+                                  ? 'AYNI İLÇEDEN'
+                                  : 'DİĞER HABERLER',
+                            ),
                     ),
                     const SizedBox(height: 40),
                   ],
@@ -266,8 +284,9 @@ class _KaynakKutusu extends StatelessWidget {
 }
 
 class _Ilgililer extends StatelessWidget {
-  const _Ilgililer({required this.liste});
+  const _Ilgililer({required this.liste, required this.baslik});
   final List<Haber> liste;
+  final String baslik;
 
   @override
   Widget build(BuildContext context) {
