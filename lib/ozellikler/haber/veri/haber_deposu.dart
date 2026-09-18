@@ -104,7 +104,15 @@ final haberSaglayici = FutureProvider.autoDispose.family<Haber?, String>((
   return ref.watch(haberDeposuSaglayici).slugIle(slug);
 });
 
+/// İlgili haberler — anahtar SLUG, `Haber` nesnesi DEĞİL.
+///
+/// `family` anahtarı her yeniden çizimde kimliği değişen bir nesne olursa
+/// sağlayıcı sürekli atılıp yeniden kuruluyor ve sonuç hiç yerleşmiyor:
+/// ekranda bölüm boş kalıyor. `Haber` sınıfı `==`/`hashCode` tanımlamıyor,
+/// dolayısıyla anahtar olamaz. Slug değişmez ve eşitliği doğru çalışır.
 final ilgililerSaglayici = FutureProvider.autoDispose
-    .family<List<Haber>, Haber>((ref, haber) {
+    .family<List<Haber>, String>((ref, slug) async {
+      final haber = await ref.watch(haberSaglayici(slug).future);
+      if (haber == null) return const [];
       return ref.watch(haberDeposuSaglayici).ilgililer(haber);
     });

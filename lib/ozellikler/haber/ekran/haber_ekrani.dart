@@ -37,7 +37,7 @@ class _Govde extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final t = Theme.of(context);
-    final ilgililer = ref.watch(ilgililerSaglayici(haber));
+    final ilgililer = ref.watch(ilgililerSaglayici(haber.slug));
     final paragraflar = (haber.govde ?? '')
         .split(RegExp(r'\n\s*\n|\n'))
         .map((p) => p.trim())
