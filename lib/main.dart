@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
@@ -9,6 +10,11 @@ import 'cekirdek/yonlendirme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Adres çubuğunda # olmasın: /haber/slug gerçek bir yol olmalı.
+  // Haber portalında paylaşılan bağlantı ve arama motoru indekslemesi
+  // buna bağlı — Flutter'ın varsayılan hash yönlendirmesiyle her adres
+  // ana sayfaya düşüyordu.
+  usePathUrlStrategy();
   await initializeDateFormatting('tr');
   if (SupabaseAyar.yapilandirildi) {
     await supabaseBaslat();
