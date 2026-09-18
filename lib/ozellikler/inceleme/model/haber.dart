@@ -76,12 +76,16 @@ class IlceBagi {
   final String kaynak;
   final bool onaylandi;
 
+  /// İlçenin gösterim sırası (`ilceler.sira`). Gelmezse sona atılıyor.
+  final int sira;
+
   const IlceBagi({
     required this.ilceId,
     required this.ad,
     required this.guven,
     required this.kaynak,
     required this.onaylandi,
+    this.sira = 99,
   });
 
   bool get modelMutabakati => kaynak == 'model+sozluk';
@@ -102,6 +106,7 @@ class IlceBagi {
       guven: (j['guven'] as num?)?.toDouble() ?? 0,
       kaynak: j['kaynak'] as String? ?? '',
       onaylandi: j['onaylandi'] as bool? ?? false,
+      sira: ilce is Map ? ((ilce['sira'] as num?)?.toInt() ?? 99) : 99,
     );
   }
 }

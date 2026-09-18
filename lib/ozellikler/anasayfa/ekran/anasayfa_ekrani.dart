@@ -16,7 +16,7 @@ class AnasayfaEkrani extends ConsumerWidget {
 
     return Scaffold(
       body: RefreshIndicator(
-        onRefresh: () async => ref.invalidate(yayindakilerSaglayici),
+        onRefresh: () async => ref.invalidate(tumYayindakilerSaglayici),
         child: CustomScrollView(
           slivers: [
             const _Kunye(),

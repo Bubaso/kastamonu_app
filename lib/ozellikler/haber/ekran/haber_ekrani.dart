@@ -6,6 +6,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../../../cekirdek/tema.dart';
 import '../../inceleme/model/haber.dart';
+import '../../anasayfa/veri/anasayfa_deposu.dart';
 import '../veri/haber_deposu.dart';
 
 class HaberEkrani extends ConsumerWidget {
@@ -14,18 +15,50 @@ class HaberEkrani extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final haber = ref.watch(haberSaglayici(slug));
+    // Haber, paylaşılan listeden alınıyor — kendi sorgusunu ATMIYOR.
+    //
+    // Bu sayfa önce iki ayrı sorgu atıyordu: biri haberin kendisi, biri
+    // alt şerit. Ana sayfadan gelindiğinde ikisi de çalışıyordu; doğrudan
+    // adrese girildiğinde (paylaşılan bağlantı) alt şerit sorgusu HİÇ
+    // tamamlanmıyordu. Fark tek: derin bağlantıda ikisi de açılışta,
+    // Supabase istemcisi daha oturumunu kurarken aynı anda tetikleniyor.
+    // Tek sorguya indirmek sorunu ortadan kaldırıyor.
+    //
+    // Liste son 200 yayını kapsıyor; daha eski bir habere doğrudan
+    // gelinirse `haberSaglayici` yedeği devreye giriyor.
+    final tumu = ref.watch(tumYayindakilerSaglayici);
 
     return Scaffold(
-      body: haber.when(
+      body: tumu.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (h, _) => _Uyari(metin: 'Haber yüklenemedi.\n$h'),
-        data: (h) => h == null
-            ? const _Uyari(
-                metin: 'Bu haber bulunamadı ya da yayından kaldırıldı.',
-              )
-            : _Govde(haber: h),
+        data: (liste) {
+          for (final h in liste) {
+            if (h.slug == slug) return _Govde(haber: h);
+          }
+          return _YedekGetirme(slug: slug);
+        },
       ),
+    );
+  }
+}
+
+/// Liste dışında kalmış (çok eski) haber için tek seferlik getirme.
+class _YedekGetirme extends ConsumerWidget {
+  const _YedekGetirme({required this.slug});
+  final String slug;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final haber = ref.watch(haberSaglayici(slug));
+    return haber.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (h, _) => _Uyari(metin: 'Haber yüklenemedi.\n$h'),
+      data: (h) => h == null
+          ? const _Uyari(
+              metin: 'Bu haber bulunamadı ya da yayından kaldırıldı.',
+            )
+          : _Govde(haber: h),
     );
   }
 }
@@ -39,16 +72,6 @@ class _Govde extends ConsumerStatefulWidget {
 }
 
 class _GovdeState extends ConsumerState<_Govde> {
-  /// İlgili haberler geleceği BİR KEZ, initState'te üretiliyor.
-  ///
-  /// `FutureBuilder(future: ...çağrı...)` biçiminde gelecek `build()` içinde
-  /// üretilirse her yeniden çizimde sıfırlanır ve widget sık çiziliyorsa
-  /// bölüm sonsuza kadar "bekliyor"da kalır. Bu hatayı bu ekranda bizzat
-  /// yaşadık: bölüm hiç açılmadı, ne hata verdi ne veri.
-  late final Future<List<Haber>> _ilgililer = ref
-      .read(haberDeposuSaglayici)
-      .ilgililer(widget.haber.slug);
-
   @override
   Widget build(BuildContext context) {
     final haber = widget.haber;
@@ -109,28 +132,7 @@ class _GovdeState extends ConsumerState<_Govde> {
                     const SizedBox(height: 10),
                     _KaynakKutusu(haber: haber),
                     const SizedBox(height: 30),
-                    FutureBuilder<List<Haber>>(
-                      future: _ilgililer,
-                      builder: (context, anlik) {
-                        final liste = anlik.data ?? const <Haber>[];
-                        if (liste.isEmpty) return const SizedBox.shrink();
-                        // Gerçekten aynı ilçeden haber geldiyse başlık onu
-                        // söylesin; gelmediyse "ilgili" demek yanıltıcı olur.
-                        final ayniIlce = liste.any(
-                          (h) => h.ilceler.any(
-                            (b) =>
-                                b.onaylandi &&
-                                haber.ilceler.any(
-                                  (k) => k.onaylandi && k.ilceId == b.ilceId,
-                                ),
-                          ),
-                        );
-                        return _Ilgililer(
-                          liste: liste,
-                          baslik: ayniIlce ? 'AYNI İLÇEDEN' : 'DİĞER HABERLER',
-                        );
-                      },
-                    ),
+                    _IlgiliBolum(haber: haber),
                     const SizedBox(height: 40),
                   ],
                 ),
@@ -295,6 +297,62 @@ class _KaynakKutusu extends StatelessWidget {
   }
 }
 
+/// Detay sayfasının alt şeridi.
+///
+/// Kendi sorgusunu ATMIYOR: ana sayfanın da kullandığı paylaşılan
+/// `tumYayindakilerSaglayici` listesinden bellekte süzüyor. Önceki sürüm
+/// burada ayrı bir sorgu çalıştırıyordu ve bölüm hiç açılmadı — ne hata
+/// verdi ne veri; birkaç farklı kurgu denendi, hiçbiri değiştirmedi.
+/// Zaten yüklü listeyi kullanmak hem o sorunu tamamen atlıyor hem de
+/// fazladan ağ isteği doğurmuyor.
+class _IlgiliBolum extends ConsumerWidget {
+  const _IlgiliBolum({required this.haber});
+  final Haber haber;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tumu = ref.watch(tumYayindakilerSaglayici);
+    return tumu.when(
+      loading: () => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (liste) {
+        final digerleri = liste.where((h) => h.id != haber.id).toList();
+        if (digerleri.isEmpty) return const SizedBox.shrink();
+
+        final benimIlceler = onayliIlceler(haber);
+        // Önce aynı ilçeden: yerel portalda bu bağ kategoriden anlamlı.
+        // Tosya haberi okuyan Tosya'nın başka haberini merak eder.
+        final ayniIlce = digerleri
+            .where(
+              (h) => onayliIlceler(h).intersection(benimIlceler).isNotEmpty,
+            )
+            .toList();
+        final ayniKategori = digerleri
+            .where(
+              (h) => h.kategoriAd != null && h.kategoriAd == haber.kategoriAd,
+            )
+            .toList();
+
+        final secilen = <String, Haber>{};
+        for (final h in [...ayniIlce, ...ayniKategori, ...digerleri]) {
+          if (secilen.length >= 4) break;
+          secilen[h.id] = h;
+        }
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 4),
+          child: _Ilgililer(
+            liste: secilen.values.toList(),
+            // Başlık dürüst olsun: gerçekten aynı ilçeden haber yoksa
+            // "ilgili" demek okuru yanıltır.
+            baslik: ayniIlce.isNotEmpty ? 'AYNI İLÇEDEN' : 'DİĞER HABERLER',
+          ),
+        );
+      },
+    );
+  }
+}
+
 class _Ilgililer extends StatelessWidget {
   const _Ilgililer({required this.liste, required this.baslik});
   final List<Haber> liste;
@@ -308,9 +366,9 @@ class _Ilgililer extends StatelessWidget {
       children: [
         Row(
           children: [
-            const Text(
-              'İLGİLİ HABERLER',
-              style: TextStyle(
+            Text(
+              baslik,
+              style: const TextStyle(
                 fontSize: 11.5,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.2,

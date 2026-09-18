@@ -27,84 +27,18 @@ class HaberDeposu {
     if (y == null) return null;
     return Haber.jsondan(y);
   }
-
-  /// İlgili haberler: önce aynı ilçeden, yetmezse aynı kategoriden.
-  ///
-  /// Yerel bir portalda "aynı ilçe" bağı "aynı kategori"den daha anlamlı:
-  /// Tosya'daki bir haberi okuyan kişi Tosya'nın başka haberini merak eder,
-  /// başka ilçedeki bir ekonomi haberini değil.
-  /// İlgili haberler. Girdi SLUG — `Haber` nesnesi değil.
-  ///
-  /// Haberi burada kendisi çekiyor. İlk sürümde bu iş iki sağlayıcıya
-  /// bölünmüştü: `ilgililerSaglayici` içinde `haberSaglayici(slug).future`
-  /// bekleniyordu. İkisi de `autoDispose` olduğu için sağlayıcılar
-  /// birbirini atıp yeniden kuruyor ve sonuç **hiç yerleşmiyordu** —
-  /// ekranda bölüm sonsuza kadar "yükleniyor"da kaldı. Bir fazladan sorgu,
-  /// iç içe sağlayıcıdan ucuz.
-  Future<List<Haber>> ilgililer(String slug, {int adet = 4}) async {
-    final haber = await slugIle(slug);
-    if (haber == null) return const [];
-
-    final ilceIdler = haber.ilceler
-        .where((b) => b.onaylandi)
-        .map((b) => b.ilceId)
-        .toList();
-
-    final toplanan = <String, Haber>{};
-
-    if (ilceIdler.isNotEmpty) {
-      final y = await sb
-          .from('haberler')
-          .select(_secim)
-          .eq('durum', 'yayinda')
-          .neq('id', haber.id)
-          .order('olusturuldu', ascending: false)
-          .limit(40);
-      for (final j in (y as List)) {
-        final h = Haber.jsondan(j as Map<String, dynamic>);
-        final ortak = h.ilceler.any(
-          (b) => b.onaylandi && ilceIdler.contains(b.ilceId),
-        );
-        if (ortak) toplanan[h.id] = h;
-        if (toplanan.length >= adet) break;
-      }
-    }
-
-    if (toplanan.length < adet && haber.kategoriAd != null) {
-      final y = await sb
-          .from('haberler')
-          .select(_secim)
-          .eq('durum', 'yayinda')
-          .neq('id', haber.id)
-          .order('olusturuldu', ascending: false)
-          .limit(20);
-      for (final j in (y as List)) {
-        final h = Haber.jsondan(j as Map<String, dynamic>);
-        if (h.kategoriAd == haber.kategoriAd) toplanan[h.id] = h;
-        if (toplanan.length >= adet) break;
-      }
-    }
-
-    // Üçüncü yedek: ne aynı ilçeden ne aynı kategoriden bir şey yoksa
-    // son haberler. Küçük bir portalda ilk haftalarda bu durum kural,
-    // istisna değil — bölümü boş bırakmak sayfayı yarım gösteriyor.
-    if (toplanan.isEmpty) {
-      final y = await sb
-          .from('haberler')
-          .select(_secim)
-          .eq('durum', 'yayinda')
-          .neq('id', haber.id)
-          .order('olusturuldu', ascending: false)
-          .limit(adet);
-      for (final j in (y as List)) {
-        final h = Haber.jsondan(j as Map<String, dynamic>);
-        toplanan[h.id] = h;
-      }
-    }
-
-    return toplanan.values.take(adet).toList();
-  }
 }
+
+// NOT: `ilgililer()` metodu KALDIRILDI.
+//
+// Detay sayfasının alt şeridi artık kendi sorgusunu atmıyor; ana sayfanın
+// da kullandığı paylaşılan listeden bellekte süzülüyor
+// (`tumYayindakilerSaglayici`). Eski sürümde buradaki sorgu hiç
+// tamamlanmıyordu — Riverpod family, iç içe sağlayıcı, FutureBuilder ve
+// State alanı olmak üzere dört farklı kurgu denendi, hiçbiri değiştirmedi;
+// aynı REST çağrısı tarayıcı konsolundan 455 ms'de sorunsuz dönüyordu.
+// Zaten yüklü listeyi kullanmak sorunu atlıyor ve fazladan istek de
+// doğurmuyor.
 
 final haberDeposuSaglayici = Provider((_) => HaberDeposu());
 
