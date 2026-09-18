@@ -30,14 +30,29 @@ class HaberEkrani extends ConsumerWidget {
   }
 }
 
-class _Govde extends ConsumerWidget {
+class _Govde extends ConsumerStatefulWidget {
   const _Govde({required this.haber});
   final Haber haber;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_Govde> createState() => _GovdeState();
+}
+
+class _GovdeState extends ConsumerState<_Govde> {
+  /// İlgili haberler geleceği BİR KEZ, initState'te üretiliyor.
+  ///
+  /// `FutureBuilder(future: ...çağrı...)` biçiminde gelecek `build()` içinde
+  /// üretilirse her yeniden çizimde sıfırlanır ve widget sık çiziliyorsa
+  /// bölüm sonsuza kadar "bekliyor"da kalır. Bu hatayı bu ekranda bizzat
+  /// yaşadık: bölüm hiç açılmadı, ne hata verdi ne veri.
+  late final Future<List<Haber>> _ilgililer = ref
+      .read(haberDeposuSaglayici)
+      .ilgililer(widget.haber.slug);
+
+  @override
+  Widget build(BuildContext context) {
+    final haber = widget.haber;
     final t = Theme.of(context);
-    final ilgililer = ref.watch(ilgililerSaglayici(haber.slug));
     final paragraflar = (haber.govde ?? '')
         .split(RegExp(r'\n\s*\n|\n'))
         .map((p) => p.trim())
@@ -94,30 +109,27 @@ class _Govde extends ConsumerWidget {
                     const SizedBox(height: 10),
                     _KaynakKutusu(haber: haber),
                     const SizedBox(height: 30),
-                    ilgililer.when(
-                      loading: () => const SizedBox.shrink(),
-                      error: (_, _) => const SizedBox.shrink(),
-                      data: (liste) => liste.isEmpty
-                          ? const SizedBox.shrink()
-                          : _Ilgililer(
-                              liste: liste,
-                              // Aynı ilçeden bir şey geldiyse başlık onu
-                              // söylesin; gelmediyse "ilgili" demek yanıltıcı.
-                              baslik:
-                                  liste.any(
-                                    (h) => h.ilceler.any(
-                                      (b) =>
-                                          b.onaylandi &&
-                                          haber.ilceler.any(
-                                            (k) =>
-                                                k.onaylandi &&
-                                                k.ilceId == b.ilceId,
-                                          ),
-                                    ),
-                                  )
-                                  ? 'AYNI İLÇEDEN'
-                                  : 'DİĞER HABERLER',
-                            ),
+                    FutureBuilder<List<Haber>>(
+                      future: _ilgililer,
+                      builder: (context, anlik) {
+                        final liste = anlik.data ?? const <Haber>[];
+                        if (liste.isEmpty) return const SizedBox.shrink();
+                        // Gerçekten aynı ilçeden haber geldiyse başlık onu
+                        // söylesin; gelmediyse "ilgili" demek yanıltıcı olur.
+                        final ayniIlce = liste.any(
+                          (h) => h.ilceler.any(
+                            (b) =>
+                                b.onaylandi &&
+                                haber.ilceler.any(
+                                  (k) => k.onaylandi && k.ilceId == b.ilceId,
+                                ),
+                          ),
+                        );
+                        return _Ilgililer(
+                          liste: liste,
+                          baslik: ayniIlce ? 'AYNI İLÇEDEN' : 'DİĞER HABERLER',
+                        );
+                      },
                     ),
                     const SizedBox(height: 40),
                   ],

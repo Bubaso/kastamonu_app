@@ -33,7 +33,18 @@ class HaberDeposu {
   /// Yerel bir portalda "aynı ilçe" bağı "aynı kategori"den daha anlamlı:
   /// Tosya'daki bir haberi okuyan kişi Tosya'nın başka haberini merak eder,
   /// başka ilçedeki bir ekonomi haberini değil.
-  Future<List<Haber>> ilgililer(Haber haber, {int adet = 4}) async {
+  /// İlgili haberler. Girdi SLUG — `Haber` nesnesi değil.
+  ///
+  /// Haberi burada kendisi çekiyor. İlk sürümde bu iş iki sağlayıcıya
+  /// bölünmüştü: `ilgililerSaglayici` içinde `haberSaglayici(slug).future`
+  /// bekleniyordu. İkisi de `autoDispose` olduğu için sağlayıcılar
+  /// birbirini atıp yeniden kuruyor ve sonuç **hiç yerleşmiyordu** —
+  /// ekranda bölüm sonsuza kadar "yükleniyor"da kaldı. Bir fazladan sorgu,
+  /// iç içe sağlayıcıdan ucuz.
+  Future<List<Haber>> ilgililer(String slug, {int adet = 4}) async {
+    final haber = await slugIle(slug);
+    if (haber == null) return const [];
+
     final ilceIdler = haber.ilceler
         .where((b) => b.onaylandi)
         .map((b) => b.ilceId)
@@ -104,15 +115,10 @@ final haberSaglayici = FutureProvider.autoDispose.family<Haber?, String>((
   return ref.watch(haberDeposuSaglayici).slugIle(slug);
 });
 
-/// İlgili haberler — anahtar SLUG, `Haber` nesnesi DEĞİL.
-///
-/// `family` anahtarı her yeniden çizimde kimliği değişen bir nesne olursa
-/// sağlayıcı sürekli atılıp yeniden kuruluyor ve sonuç hiç yerleşmiyor:
-/// ekranda bölüm boş kalıyor. `Haber` sınıfı `==`/`hashCode` tanımlamıyor,
-/// dolayısıyla anahtar olamaz. Slug değişmez ve eşitliği doğru çalışır.
-final ilgililerSaglayici = FutureProvider.autoDispose
-    .family<List<Haber>, String>((ref, slug) async {
-      final haber = await ref.watch(haberSaglayici(slug).future);
-      if (haber == null) return const [];
-      return ref.watch(haberDeposuSaglayici).ilgililer(haber);
-    });
+// NOT: İlgili haberler için sağlayıcı YOK — bilerek.
+//
+// `FutureProvider.autoDispose.family` ile denendi ve bölüm ekranda
+// sonsuza kadar "yükleniyor"da kaldı; izleme çıktıları depo metodunun
+// HİÇ çağrılmadığını gösterdi. Tek seferlik, tek kullanıcısı olan bir
+// getirme için sağlayıcı zaten gereksiz katman. Ekran doğrudan
+// `FutureBuilder` kullanıyor.
