@@ -3,9 +3,11 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'cekirdek/supabase.dart';
 import 'cekirdek/tema.dart';
+import 'cekirdek/tercihler.dart';
 import 'cekirdek/yonlendirme.dart';
 
 Future<void> main() async {
@@ -19,7 +21,15 @@ Future<void> main() async {
   if (SupabaseAyar.yapilandirildi) {
     await supabaseBaslat();
   }
-  runApp(const ProviderScope(child: KastamonuApp()));
+  // Tercihler açılışta bir kez okunuyor ki arayüz tarafı eşzamanlı kalsın;
+  // her sekmede ayrı bir bekleme durumu taşımak gerekmiyor.
+  final tercihler = await SharedPreferences.getInstance();
+  runApp(
+    ProviderScope(
+      overrides: [tercihlerSaglayici.overrideWithValue(tercihler)],
+      child: const KastamonuApp(),
+    ),
+  );
 }
 
 class KastamonuApp extends StatelessWidget {

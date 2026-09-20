@@ -155,3 +155,44 @@ final ilceListesiSaglayici =
         return sirali.map((e) => (id: e.id, ad: e.ad)).toList();
       });
     });
+
+/// Haberi olan TÜM ilçeler — kategori seçiminden bağımsız.
+///
+/// [ilceListesiSaglayici] seçili bölüme göre daralıyor; bu ise "İlçem"
+/// sekmesindeki seçim ekranı için, orada okur bölüm değil yer seçiyor.
+final tumIlcelerSaglayici =
+    Provider<AsyncValue<List<({String id, String ad, int adet})>>>((ref) {
+      return ref.watch(tumYayindakilerSaglayici).whenData((liste) {
+        final gorulen = <String, ({String id, String ad, int sira, int adet})>{};
+        for (final h in liste) {
+          for (final b in h.ilceler) {
+            if (!b.onaylandi) continue;
+            final onceki = gorulen[b.ilceId];
+            gorulen[b.ilceId] = (
+              id: b.ilceId,
+              ad: b.ad,
+              sira: b.sira,
+              adet: (onceki?.adet ?? 0) + 1,
+            );
+          }
+        }
+        final sirali = gorulen.values.toList()
+          ..sort(
+            (a, b) => a.sira != b.sira
+                ? a.sira.compareTo(b.sira)
+                : a.ad.compareTo(b.ad),
+          );
+        return sirali
+            .map((e) => (id: e.id, ad: e.ad, adet: e.adet))
+            .toList();
+      });
+    });
+
+/// Belirli bir ilçenin haberleri.
+final ilceAkisiSaglayici =
+    Provider.family<AsyncValue<List<Haber>>, String>((ref, ilceId) {
+      return ref.watch(tumYayindakilerSaglayici).whenData(
+        (liste) =>
+            liste.where((h) => onayliIlceler(h).contains(ilceId)).toList(),
+      );
+    });

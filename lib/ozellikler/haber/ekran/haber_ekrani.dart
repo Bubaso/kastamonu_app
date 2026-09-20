@@ -4,8 +4,11 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../cekirdek/metin.dart';
 import '../../../cekirdek/tema.dart';
+import '../../../cekirdek/tercihler.dart';
 import '../../inceleme/model/haber.dart';
+import '../../anasayfa/ekran/anasayfa_ekrani.dart' show gecenSure;
 import '../../anasayfa/veri/anasayfa_deposu.dart';
 import '../veri/haber_deposu.dart';
 
@@ -75,7 +78,10 @@ class _GovdeState extends ConsumerState<_Govde> {
   @override
   Widget build(BuildContext context) {
     final haber = widget.haber;
-    final t = Theme.of(context);
+    // Okurun seçtiği punto. Gövde tam çarpanla, başlık daha yumuşak
+    // büyüyor: başlık zaten büyük, aynı çarpanla üç satır daha uzuyor.
+    final carpan = ref.watch(puntoSaglayici).carpan;
+    final baslikCarpani = 1 + (carpan - 1) * 0.45;
     final paragraflar = (haber.govde ?? '')
         .split(RegExp(r'\n\s*\n|\n'))
         .map((p) => p.trim())
@@ -97,20 +103,29 @@ class _GovdeState extends ConsumerState<_Govde> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _Etiketler(haber: haber),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 12),
                     Text(
                       haber.baslik,
-                      style: t.textTheme.displaySmall?.copyWith(fontSize: 31),
+                      style: TextStyle(
+                        fontFamily: Tema.serif,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 31 * baslikCarpani,
+                        height: 1.14,
+                        letterSpacing: -0.6,
+                        color: Tema.murekkep,
+                      ),
                     ),
                     if ((haber.spot ?? '').isNotEmpty) ...[
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 13),
                       Text(
                         haber.spot!,
-                        style: t.textTheme.bodyLarge?.copyWith(
-                          fontSize: 17.5,
-                          height: 1.55,
-                          color: Tema.solgun,
-                          fontWeight: FontWeight.w500,
+                        style: TextStyle(
+                          fontFamily: Tema.serif,
+                          fontSize: 18.5 * carpan,
+                          height: 1.5,
+                          // Spot artık `solgun` değil: giriş paragrafı
+                          // okunacak metin, künye değil.
+                          color: Tema.murekkepIkincil,
                         ),
                       ),
                     ],
@@ -120,37 +135,57 @@ class _GovdeState extends ConsumerState<_Govde> {
                     // görsel yok — başlık zaten sayfanın tepesinde.
                     if ((haber.gorselKaynak ?? '').isNotEmpty &&
                         (haber.gorselUrl ?? '').isNotEmpty) ...[
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: AspectRatio(
-                          aspectRatio: 1200 / 630,
-                          child: Image.network(
-                            haber.gorselUrl!,
-                            fit: BoxFit.cover,
-                            errorBuilder: (c, e, s) => const SizedBox.shrink(),
-                          ),
+                      AspectRatio(
+                        aspectRatio: 1200 / 630,
+                        child: Image.network(
+                          haber.gorselUrl!,
+                          fit: BoxFit.cover,
+                          // Ana sayfadaki ile aynı gerekçe: CanvasKit'te
+                          // `loadingProgress` yükleme boyunca null kaldığı
+                          // için yerinde beyaz boşluk duruyordu.
+                          // `frameBuilder` ilk kare boyanana kadar zemini
+                          // dolduruyor.
+                          frameBuilder: (c, cocuk, kare, esGirdi) =>
+                              kare == null
+                              ? const ColoredBox(
+                                  color: Tema.sunkKoyu,
+                                  child: SizedBox.expand(),
+                                )
+                              : cocuk,
+                          errorBuilder: (c, e, s) => const SizedBox.shrink(),
                         ),
                       ),
                       const SizedBox(height: 7),
                       Text(
                         'Fotoğraf: ${haber.gorselKaynak}',
                         style: const TextStyle(
+                          fontFamily: Tema.sans,
                           fontSize: 12,
                           color: Tema.solgun,
                         ),
                       ),
-                      const SizedBox(height: 22),
-                    ] else
-                      const Divider(),
-                    const SizedBox(height: 20),
+                      const SizedBox(height: 20),
+                    ],
+                    // Punto ayarı metnin hemen başında — okur zorlandığı
+                    // anda görüyor, aramak zorunda kalmıyor.
+                    const Divider(),
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 10),
+                      child: _PuntoSecici(),
+                    ),
+                    const Divider(),
+                    const SizedBox(height: 22),
                     ...paragraflar.map(
                       (p) => Padding(
-                        padding: const EdgeInsets.only(bottom: 17),
+                        padding: EdgeInsets.only(bottom: 15 * carpan),
                         child: Text(
                           p,
-                          style: t.textTheme.bodyLarge?.copyWith(
-                            fontSize: 16.5,
-                            height: 1.72,
+                          style: TextStyle(
+                            fontFamily: Tema.serif,
+                            // 17,5 taban: 45 yaş okur için asgari.
+                            fontSize: 17.5 * carpan,
+                            height: 1.7,
+                            color: Tema.murekkep,
                           ),
                         ),
                       ),
@@ -171,44 +206,152 @@ class _GovdeState extends ConsumerState<_Govde> {
   }
 }
 
-class _UstCubuk extends StatelessWidget {
+class _UstCubuk extends ConsumerWidget {
   const _UstCubuk({required this.haber});
   final Haber haber;
 
   @override
-  Widget build(BuildContext context) {
-    final t = Theme.of(context);
-    return Container(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final kayitli = ref.watch(kaydedilenlerSaglayici).contains(haber.slug);
+    return DecoratedBox(
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(bottom: BorderSide(color: Tema.cizgi)),
+        border: Border(bottom: BorderSide(color: Tema.murekkep, width: 2)),
       ),
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1080),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(14, 12, 22, 12),
+            padding: const EdgeInsets.fromLTRB(6, 6, 8, 6),
             child: Row(
               children: [
                 IconButton(
                   onPressed: () =>
                       context.canPop() ? context.pop() : context.go('/'),
-                  icon: const Icon(Icons.arrow_back),
+                  icon: const Icon(Icons.arrow_back, size: 22),
+                  color: Tema.murekkep,
                   tooltip: 'Geri',
                 ),
-                const SizedBox(width: 4),
-                InkWell(
-                  onTap: () => context.go('/'),
-                  child: Text(
-                    'Kastamonu Haber',
-                    style: t.textTheme.titleLarge?.copyWith(fontSize: 19),
+                Expanded(
+                  child: InkWell(
+                    onTap: () => context.go('/'),
+                    child: const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 8),
+                      child: Text(
+                        'Kastamonu Haber',
+                        style: TextStyle(
+                          fontFamily: Tema.serif,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 19,
+                          letterSpacing: -0.4,
+                          color: Tema.murekkep,
+                        ),
+                      ),
+                    ),
                   ),
+                ),
+                // Kaydetme haberin kendi başlığında: okur "bunu sonra
+                // okurum" kararını tam burada veriyor.
+                IconButton(
+                  onPressed: () => _kaydet(context, ref),
+                  icon: Icon(
+                    kayitli ? Icons.bookmark : Icons.bookmark_outline,
+                    size: 22,
+                  ),
+                  color: kayitli ? Tema.bakir : Tema.solgun,
+                  tooltip: kayitli ? 'Kayıttan çıkar' : 'Kaydet',
                 ),
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+
+  Future<void> _kaydet(BuildContext context, WidgetRef ref) async {
+    final artikKayitli =
+        await ref.read(kaydedilenlerSaglayici.notifier).degistir(haber.slug);
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          duration: const Duration(seconds: 3),
+          content: Text(
+            artikKayitli
+                ? 'Kaydedildi — "Kaydettiklerim"de.'
+                : 'Kayıttan çıkarıldı.',
+          ),
+          action: artikKayitli
+              ? SnackBarAction(
+                  label: 'Git',
+                  textColor: Tema.patinaZemin,
+                  onPressed: () => context.go('/kaydettiklerim'),
+                )
+              : null,
+        ),
+      );
+  }
+}
+
+/// Punto ayarı.
+///
+/// Kastamonu'nun ortanca yaşı 43,3 ve 65 üstü oranı %21,1 — presbiyopi tam
+/// bu yaşta başlıyor. Bu yüzden ayar bir ayarlar menüsünde değil, metnin
+/// hemen başında: okur zorlandığı anda görüyor.
+class _PuntoSecici extends ConsumerWidget {
+  const _PuntoSecici();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final secili = ref.watch(puntoSaglayici);
+    return Row(
+      children: [
+        const Icon(Icons.text_fields, size: 17, color: Tema.solgun),
+        const SizedBox(width: 9),
+        const Text(
+          'Yazı boyutu',
+          style: TextStyle(
+            fontFamily: Tema.sans,
+            fontSize: 13,
+            color: Tema.solgun,
+          ),
+        ),
+        const Spacer(),
+        ...Punto.values.map((p) {
+          final etkin = p == secili;
+          return Padding(
+            padding: const EdgeInsets.only(left: 6),
+            child: Material(
+              color: etkin ? Tema.patina : Colors.white,
+              child: InkWell(
+                onTap: () => ref.read(puntoSaglayici.notifier).sec(p),
+                child: Container(
+                  constraints: const BoxConstraints(minWidth: 44, minHeight: 38),
+                  alignment: Alignment.center,
+                  padding: const EdgeInsets.symmetric(horizontal: 11),
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: etkin ? Tema.patina : Tema.cizgiKuvvetli,
+                    ),
+                  ),
+                  child: Text(
+                    'A',
+                    style: TextStyle(
+                      fontFamily: Tema.serif,
+                      // Düğmenin kendisi ne yaptığını gösteriyor.
+                      fontSize: 12 + p.index * 3.5,
+                      fontWeight: FontWeight.w700,
+                      color: etkin ? Colors.white : Tema.murekkep,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }),
+      ],
     );
   }
 }
@@ -225,32 +368,40 @@ class _Etiketler extends StatelessWidget {
       runSpacing: 6,
       crossAxisAlignment: WrapCrossAlignment.center,
       children: [
+        // Renk ayrımı bilgi taşıyor: bölüm patina, ilçe bakır.
         if (haber.kategoriAd != null)
           Text(
-            haber.kategoriAd!.toUpperCase(),
+            buyult(haber.kategoriAd!),
             style: const TextStyle(
-              fontSize: 12,
+              fontFamily: Tema.sans,
+              fontSize: 11.5,
               fontWeight: FontWeight.w700,
-              letterSpacing: 1,
+              letterSpacing: 1.1,
               color: Tema.patina,
             ),
           ),
         ...ilce.map(
-          (ad) => Container(
-            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-            decoration: BoxDecoration(
-              border: Border.all(color: Tema.cizgi),
-              borderRadius: BorderRadius.circular(3),
-            ),
-            child: Text(
-              ad,
-              style: const TextStyle(fontSize: 11.5, color: Tema.solgun),
+          (ad) => Text(
+            buyult(ad),
+            style: const TextStyle(
+              fontFamily: Tema.sans,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.1,
+              color: Tema.bakir,
             ),
           ),
         ),
+        // Haber sayfasında hem göreli hem mutlak zaman: tazelik bir
+        // bakışta, kayıt için tam tarih.
         Text(
-          DateFormat("d MMMM y, HH:mm", 'tr').format(haber.olusturuldu),
-          style: const TextStyle(fontSize: 12, color: Tema.solgun),
+          '${gecenSure(haber.olusturuldu)}  ·  '
+          '${DateFormat("d MMMM y, HH:mm", 'tr').format(haber.olusturuldu)}',
+          style: const TextStyle(
+            fontFamily: Tema.sans,
+            fontSize: 12,
+            color: Tema.solgun,
+          ),
         ),
       ],
     );
@@ -274,8 +425,7 @@ class _KaynakKutusu extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
       decoration: BoxDecoration(
         color: Colors.white,
-        border: Border.all(color: Tema.cizgi),
-        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Tema.cizgiKuvvetli),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -417,7 +567,7 @@ class _Ilgililer extends StatelessWidget {
                     children: [
                       if (h.kategoriAd != null)
                         Text(
-                          h.kategoriAd!.toUpperCase(),
+                          buyult(h.kategoriAd!),
                           style: const TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w700,

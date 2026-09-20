@@ -5,10 +5,24 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../cekirdek/kabuk.dart';
+import '../../../cekirdek/metin.dart';
 import '../../../cekirdek/tema.dart';
 import '../../inceleme/model/haber.dart';
 import '../veri/anasayfa_deposu.dart';
 
+/// Ana sayfa — portalın asıl ürünü.
+///
+/// Tarım Portalı'nda ürün haberin kendisi: okur aramadan tek bir yazı için
+/// gelir, okur, çıkar. Şehir portalında ürün bu sayfa: aynı okur günde
+/// birkaç kez uğrayıp "yeni ne var" diye bakar. Bu yüzden buradaki düzen
+/// bir dergi açılışı değil, bir **fihrist**.
+///
+/// Ölçüm: önceki düzende 375×812 telefonda ilk ekranda tek başlık
+/// görünüyordu (künye 92 px + bölüm çubuğu 50 px + ilçe çubuğu 52 px, sonra
+/// tek kart ve altı satırlık özet). Şimdi beş başlık görünüyor:
+/// künye 44'e indi, ilçe çubuğu "İlçem" sekmesine taşındı, ikincil
+/// haberlerde özet kalktı ve kart yerine satır kullanılıyor.
 class AnasayfaEkrani extends ConsumerStatefulWidget {
   const AnasayfaEkrani({super.key, this.kategoriSlug});
 
@@ -45,89 +59,99 @@ class _AnasayfaEkraniState extends ConsumerState<AnasayfaEkrani> {
   Widget build(BuildContext context) {
     final haberler = ref.watch(yayindakilerSaglayici);
 
-    return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: () async => ref.invalidate(tumYayindakilerSaglayici),
-        child: CustomScrollView(
-          slivers: [
-            const _Kunye(),
-            const _KategoriCubugu(),
-            const _IlceCubugu(),
-            haberler.when(
-              loading: () => const SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(child: CircularProgressIndicator()),
-              ),
-              error: (h, _) => SliverFillRemaining(
-                hasScrollBody: false,
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(28),
-                    child: Text('$h'),
-                  ),
+    return RefreshIndicator(
+      onRefresh: () async => ref.invalidate(tumYayindakilerSaglayici),
+      child: CustomScrollView(
+        slivers: [
+          const Kunye(),
+          const _SonDakika(),
+          const _KategoriCubugu(),
+          haberler.when(
+            loading: () => const SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(child: CircularProgressIndicator()),
+            ),
+            error: (h, _) => SliverFillRemaining(
+              hasScrollBody: false,
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(28),
+                  child: Text('$h'),
                 ),
               ),
-              data: (liste) => liste.isEmpty
-                  ? const SliverFillRemaining(
-                      hasScrollBody: false,
-                      child: _Bos(),
-                    )
-                  : _Akis(liste: liste),
             ),
-            const SliverToBoxAdapter(child: _Alt()),
-          ],
-        ),
+            data: (liste) => liste.isEmpty
+                ? const SliverFillRemaining(hasScrollBody: false, child: Bos())
+                : _Akis(liste: liste),
+          ),
+          const SliverToBoxAdapter(child: Alt()),
+        ],
       ),
     );
   }
 }
 
-class _Kunye extends StatelessWidget {
-  const _Kunye();
+/// Künye — 92 pikselden 44'e.
+///
+/// Tarih künyeden çıkıp sağa, tek satıra geçti. Kazanılan 48 piksel
+/// doğrudan habere gidiyor.
+class Kunye extends StatelessWidget {
+  const Kunye({super.key, this.baslik = 'Kastamonu Haber'});
+
+  final String baslik;
 
   @override
   Widget build(BuildContext context) {
-    final t = Theme.of(context);
+    final genis = !Kabuk.darMi(context);
     return SliverToBoxAdapter(
-      child: Container(
+      child: DecoratedBox(
         decoration: const BoxDecoration(
           color: Colors.white,
-          border: Border(bottom: BorderSide(color: Tema.cizgi)),
+          // Künye ile sayfa arasında gazete kuralı: kalın çizgi.
+          border: Border(bottom: BorderSide(color: Tema.murekkep, width: 2)),
         ),
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1080),
             child: Padding(
-              padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+              padding: EdgeInsets.fromLTRB(18, genis ? 14 : 11, 12, genis ? 14 : 11),
               child: Row(
                 children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Kastamonu Haber',
-                        style: t.textTheme.displaySmall?.copyWith(fontSize: 30),
+                  GestureDetector(
+                    onTap: () => context.go('/'),
+                    child: Text(
+                      baslik,
+                      style: TextStyle(
+                        fontFamily: Tema.serif,
+                        fontWeight: FontWeight.w700,
+                        fontSize: genis ? 26 : 21,
+                        letterSpacing: -0.6,
+                        height: 1.05,
+                        color: Tema.murekkep,
                       ),
-                      const SizedBox(height: 3),
-                      Text(
-                        DateFormat(
-                          "d MMMM y, EEEE",
-                          'tr',
-                        ).format(DateTime.now()),
-                        style: t.textTheme.labelMedium?.copyWith(
+                    ),
+                  ),
+                  const Spacer(),
+                  if (genis) ...[
+                    const GenisGezinti(),
+                    IconButton(
+                      onPressed: () => context.go('/panel'),
+                      icon: const Icon(Icons.dashboard_outlined, size: 18),
+                      color: Tema.solgun,
+                      tooltip: 'Panel',
+                    ),
+                  ] else
+                    Padding(
+                      padding: const EdgeInsets.only(right: 6),
+                      child: Text(
+                        DateFormat('d MMMM, EEEE', 'tr').format(DateTime.now()),
+                        style: const TextStyle(
+                          fontFamily: Tema.sans,
+                          fontSize: 12,
                           color: Tema.solgun,
                         ),
                       ),
-                    ],
-                  ),
-                  const Spacer(),
-                  TextButton.icon(
-                    onPressed: () => context.go('/panel'),
-                    icon: const Icon(Icons.dashboard_outlined, size: 17),
-                    label: const Text('Panel'),
-                    style: TextButton.styleFrom(foregroundColor: Tema.solgun),
-                  ),
+                    ),
                 ],
               ),
             ),
@@ -138,44 +162,71 @@ class _Kunye extends StatelessWidget {
   }
 }
 
-/// Kategori çubuğu — gazetenin bölüm satırı.
+/// Son dakika bandı — yalnızca gerçekten yeni haber varken.
 ///
-/// Kategoriler birincil gezinme; ilçe süzgeci onun altında bir daraltma.
-/// Bölüm seçimi adrese yazılıyor (`/kategori/spor`), yani paylaşılabilir.
-class _KategoriCubugu extends ConsumerWidget {
-  const _KategoriCubugu();
+/// Rakiplerin hepsinde bu bant sürekli açık; sürekli açık olan bir "son
+/// dakika" uyarısı sinyal olmaktan çıkıp süse dönüşüyor. Burada haber
+/// yoksa bant da yok.
+///
+/// **Geçici kural:** şimdilik "son [_esik] içinde yayımlanmış en yeni
+/// haber" ölçütü kullanılıyor. Hat elle tetiklendiği için bu pratikte
+/// "az önce geldi" demek oluyor. Doğrusu editörün panelden koyacağı bir
+/// işaret; o alan açıldığında burası ona bağlanmalı.
+class _SonDakika extends ConsumerWidget {
+  const _SonDakika();
+
+  static const _esik = Duration(hours: 3);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final kategoriler = ref.watch(kategoriListesiSaglayici);
-    final secili = ref.watch(kategoriSecimiSaglayici);
+    final liste = ref.watch(tumYayindakilerSaglayici).asData?.value;
+    if (liste == null || liste.isEmpty) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+    final h = liste.first;
+    if (DateTime.now().difference(h.olusturuldu) > _esik) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
 
     return SliverToBoxAdapter(
-      child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(bottom: BorderSide(color: Tema.cizgi)),
-        ),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1080),
-            child: SizedBox(
-              height: 46,
-              child: kategoriler.when(
-                loading: () => const SizedBox.shrink(),
-                error: (_, _) => const SizedBox.shrink(),
-                data: (liste) => ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 18),
+      child: Material(
+        color: Tema.sonDakika,
+        child: InkWell(
+          onTap: () => context.go('/haber/${h.slug}'),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1080),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(18, 9, 18, 9),
+                child: Row(
                   children: [
-                    _baglanti(context, 'Tümü', null, secili == null),
-                    ...liste.map(
-                      (k) => _baglanti(
-                        context,
-                        k.ad,
-                        k.slug,
-                        secili == k.slug,
-                        adet: k.adet,
+                    const Text(
+                      'SON DAKİKA',
+                      style: TextStyle(
+                        fontFamily: Tema.sans,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 1.2,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Container(
+                      width: 1,
+                      height: 13,
+                      margin: const EdgeInsets.symmetric(horizontal: 10),
+                      color: Colors.white54,
+                    ),
+                    Expanded(
+                      child: Text(
+                        h.baslik,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: Tema.sans,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ],
@@ -187,82 +238,43 @@ class _KategoriCubugu extends ConsumerWidget {
       ),
     );
   }
-
-  Widget _baglanti(
-    BuildContext c,
-    String ad,
-    String? slug,
-    bool sec, {
-    int? adet,
-  }) {
-    return InkWell(
-      onTap: () => c.go(slug == null ? '/' : '/kategori/$slug'),
-      child: Container(
-        alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: sec ? Tema.patina : Colors.transparent,
-              width: 2.5,
-            ),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              ad,
-              style: TextStyle(
-                fontSize: 13.5,
-                fontWeight: sec ? FontWeight.w700 : FontWeight.w500,
-                color: sec ? Tema.patina : Tema.murekkep,
-              ),
-            ),
-            if (adet != null) ...[
-              const SizedBox(width: 5),
-              Text(
-                '$adet',
-                style: const TextStyle(fontSize: 11, color: Tema.solgun),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
 }
 
-/// İlçe süzgeci — portalın Kastamonu'ya özgü parçası.
+/// Bölüm satırı — gazetenin kategori çizgisi.
 ///
-/// Haber akışını ilçeye göre daraltıyor. Rakiplerin hazır yayın
-/// yazılımlarında bu kırılım yok; bizde etiketleme hattan geliyor.
-class _IlceCubugu extends ConsumerWidget {
-  const _IlceCubugu();
+/// Tek gezinme çubuğu kaldı. İlçe süzgeci buradan kalkıp "İlçem" sekmesine
+/// taşındı; gerekçe `kabuk.dart` başında.
+class _KategoriCubugu extends ConsumerWidget {
+  const _KategoriCubugu();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final ilceler = ref.watch(ilceListesiSaglayici);
-    final secili = ref.watch(ilceSuzgeciSaglayici);
+    final kategoriler = ref.watch(kategoriListesiSaglayici);
+    final secili = ref.watch(kategoriSecimiSaglayici);
 
     return SliverToBoxAdapter(
-      child: Container(
-        color: Colors.white,
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(bottom: BorderSide(color: Tema.cizgi)),
+        ),
         child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 1080),
             child: SizedBox(
-              height: 52,
-              child: ilceler.when(
+              height: 42,
+              child: kategoriler.when(
                 loading: () => const SizedBox.shrink(),
                 error: (_, _) => const SizedBox.shrink(),
                 data: (liste) => ListView(
                   scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
                   children: [
-                    _cip(context, ref, 'İl geneli', null, secili == null),
+                    // "Gündem" DEĞİL: veritabanında o adda gerçek bir
+                    // kategori var ve çubukta iki kez görünüyordu.
+                    _baglanti(context, 'Tümü', null, secili == null),
                     ...liste.map(
-                      (i) => _cip(context, ref, i.ad, i.id, secili == i.id),
+                      (k) => _baglanti(context, k.ad, k.slug, secili == k.slug),
                     ),
                   ],
                 ),
@@ -274,29 +286,37 @@ class _IlceCubugu extends ConsumerWidget {
     );
   }
 
-  Widget _cip(BuildContext c, WidgetRef ref, String ad, String? id, bool sec) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 9),
-      child: ChoiceChip(
-        selected: sec,
-        onSelected: (_) => ref.read(ilceSuzgeciSaglayici.notifier).sec(id),
-        label: Text(
-          ad,
-          style: TextStyle(
-            fontSize: 12.5,
-            color: sec ? Colors.white : Tema.murekkep,
-            fontWeight: sec ? FontWeight.w600 : FontWeight.w400,
+  Widget _baglanti(BuildContext c, String ad, String? slug, bool sec) {
+    return InkWell(
+      onTap: () => c.go(slug == null ? '/' : '/kategori/$slug'),
+      child: Container(
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: sec ? Tema.patina : Colors.transparent,
+              width: 2.5,
+            ),
           ),
         ),
-        selectedColor: Tema.patina,
-        backgroundColor: Colors.white,
-        side: BorderSide(color: sec ? Tema.patina : Tema.cizgi),
-        showCheckmark: false,
+        // Adet rozeti kaldırıldı: "Asayiş 7" okura hiçbir şey söylemiyordu,
+        // yalnızca satırı kalabalıklaştırıyordu.
+        child: Text(
+          ad,
+          style: TextStyle(
+            fontFamily: Tema.sans,
+            fontSize: 13.5,
+            fontWeight: sec ? FontWeight.w600 : FontWeight.w400,
+            color: sec ? Tema.patina : Tema.murekkep,
+          ),
+        ),
       ),
     );
   }
 }
 
+/// Akış: bir manşet, sonra satırlar.
 class _Akis extends StatelessWidget {
   const _Akis({required this.liste});
   final List<Haber> liste;
@@ -311,30 +331,147 @@ class _Akis extends StatelessWidget {
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1080),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(18, 24, 18, 8),
-            child: Column(
+          child: genis
+              ? _genisDuzen(manset, kalan)
+              : _darDuzen(manset, kalan),
+        ),
+      ),
+    );
+  }
+
+  /// Telefon: manşet, sonra kesintisiz satır listesi.
+  Widget _darDuzen(Haber manset, List<Haber> kalan) {
+    return Column(
+      children: [
+        Manset(haber: manset),
+        ...kalan.map((h) => Satir(haber: h)),
+      ],
+    );
+  }
+
+  /// Masaüstü: manşet solda, en yeniler sağda; gerisi iki sütun.
+  ///
+  /// Geniş ekranda manşeti tek başına tam genişliğe yaymak sayfayı
+  /// boşaltıyor — gözün ilk gördüğü yerde tek haber kalıyor. Yan sütun
+  /// aynı alanda beş başlık daha veriyor.
+  Widget _genisDuzen(Haber manset, List<Haber> kalan) {
+    final yan = kalan.take(5).toList();
+    final alt = kalan.skip(5).toList();
+    return Padding(
+      padding: const EdgeInsets.only(top: 4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _Manset(haber: manset),
-                if (kalan.isNotEmpty) ...[
-                  const SizedBox(height: 26),
-                  const _BolumBasligi('Diğer haberler'),
-                  const SizedBox(height: 14),
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: genis ? 3 : 1,
-                      mainAxisSpacing: 16,
-                      crossAxisSpacing: 16,
-                      mainAxisExtent: 332,
-                    ),
-                    itemCount: kalan.length,
-                    itemBuilder: (c, i) => _Kutu(haber: kalan[i]),
+                Expanded(flex: 62, child: Manset(haber: manset, genis: true)),
+                Container(width: 1, color: Tema.cizgi),
+                Expanded(
+                  flex: 38,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: yan.map((h) => Satir(haber: h)).toList(),
                   ),
-                ],
+                ),
               ],
             ),
+          ),
+          if (alt.isNotEmpty) ...[
+            const _BolumBasligi('Diğer haberler'),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (var i = 0; i < alt.length; i += 2)
+                        Satir(haber: alt[i]),
+                    ],
+                  ),
+                ),
+                Container(width: 1, color: Tema.cizgi),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (var i = 1; i < alt.length; i += 2)
+                        Satir(haber: alt[i]),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Manşet.
+///
+/// Spot yalnızca geniş ekranda gösteriliyor. Telefonda spot, manşetin
+/// hemen altında dört satır gri metin demek — ölçümde tam olarak bu, ikinci
+/// başlığı ekranın dışına itiyordu.
+class Manset extends StatelessWidget {
+  const Manset({super.key, required this.haber, this.genis = false});
+
+  final Haber haber;
+  final bool genis;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      child: InkWell(
+        onTap: () => context.go('/haber/${haber.slug}'),
+        child: Container(
+          decoration: const BoxDecoration(
+            border: Border(bottom: BorderSide(color: Tema.cizgi)),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              KartBasi(haber: haber, yukseklik: genis ? 300 : 190),
+              Padding(
+                padding: EdgeInsets.fromLTRB(18, 13, 18, genis ? 20 : 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Etiketler(haber: haber),
+                    const SizedBox(height: 7),
+                    Text(
+                      haber.baslik,
+                      style: TextStyle(
+                        fontFamily: Tema.serif,
+                        fontWeight: FontWeight.w700,
+                        fontSize: genis ? 32 : 23,
+                        height: 1.16,
+                        letterSpacing: -0.5,
+                        color: Tema.murekkep,
+                      ),
+                    ),
+                    if (genis && (haber.spot ?? '').isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      Text(
+                        haber.spot!,
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: Tema.serif,
+                          fontSize: 17,
+                          height: 1.5,
+                          color: Tema.murekkepIkincil,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -342,16 +479,65 @@ class _Akis extends StatelessWidget {
   }
 }
 
-/// Kategori bandı — akıştaki görsel öge.
+/// Akış satırı — küçük görsel solda, başlık sağda, özet yok.
 ///
-/// Neden depodaki tipografik kart DEĞİL: o kart haberin başlığını
-/// taşıyor ve akışta başlık zaten hemen altında duruyor. İkisini üst üste
-/// göstermek aynı cümleyi iki kez okutuyordu — denendi, kötü görünüyor.
-/// Kartın asıl işi paylaşım önizlemesi (`og:image`), akış değil.
-///
-/// Buradaki bant ise yerel çiziliyor: kategori rengi ve Kastamonu'nun
-/// orman sırtlarını andıran eş yükselti motifi. Ağdan tek bayt inmiyor,
-/// akışa ritim ve kategori ayrımı katıyor, hiçbir şeyi temsil etmiyor.
+/// Önceki kart 332 piksel yer kaplıyordu; bu satır 93. Aynı ekrana üç
+/// kat haber sığıyor. Özet kaldırıldı çünkü akışta okurun işi bakıp
+/// seçmek, okumak değil.
+class Satir extends StatelessWidget {
+  const Satir({super.key, required this.haber});
+  final Haber haber;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      child: InkWell(
+        onTap: () => context.go('/haber/${haber.slug}'),
+        child: Container(
+          decoration: const BoxDecoration(
+            border: Border(bottom: BorderSide(color: Tema.cizgi)),
+          ),
+          padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 68,
+                height: 68,
+                child: KartBasi(haber: haber, yukseklik: 68, kucuk: true),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Etiketler(haber: haber, kucuk: true),
+                    const SizedBox(height: 4),
+                    Text(
+                      haber.baslik,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontFamily: Tema.serif,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 15.5,
+                        height: 1.27,
+                        letterSpacing: -0.1,
+                        color: Tema.murekkep,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Kart başı görseli.
 ///
 /// Kural: kaynağın GERÇEK fotoğrafı varsa o gösteriliyor, künyesinde
@@ -360,23 +546,30 @@ class _Akis extends StatelessWidget {
 /// Tipografik kart burada GÖSTERİLMİYOR — o kart haberin başlığını
 /// taşıyor ve başlık zaten hemen altında; denendi, aynı cümle iki kez
 /// okunuyordu. Kartın yeri paylaşım önizlemesi (og:image).
-class _KartBasi extends StatelessWidget {
-  const _KartBasi({required this.haber, this.yukseklik = 108});
+class KartBasi extends StatelessWidget {
+  const KartBasi({
+    super.key,
+    required this.haber,
+    this.yukseklik = 108,
+    this.kucuk = false,
+  });
+
   final Haber haber;
   final double yukseklik;
+  final bool kucuk;
 
   @override
   Widget build(BuildContext context) {
     final foto =
         (haber.gorselKaynak ?? '').isNotEmpty &&
         (haber.gorselUrl ?? '').isNotEmpty;
-    if (!foto) return _KategoriBandi(haber: haber, yukseklik: yukseklik);
+    if (!foto) {
+      return KategoriBandi(haber: haber, yukseklik: yukseklik, kucuk: kucuk);
+    }
     // Yükseklik SABİT, oran DEĞİL.
     //
     // Önce `AspectRatio` kullanılmıştı: 1200/630 oranı geniş bir kartta
-    // 394 piksele çıkıyor, manşet dev bir görsele dönüşüyor ve ızgarada
-    // kartlar taşıyordu. Izgara sabit yükseklikli; kart başı da sabit
-    // olmalı ki fotoğraflı ve bantlı kartlar aynı boyda dursun.
+    // 394 piksele çıkıyor, manşet dev bir görsele dönüşüyordu.
     return Stack(
       children: [
         SizedBox(
@@ -385,54 +578,115 @@ class _KartBasi extends StatelessWidget {
           child: Image.network(
             haber.gorselUrl!,
             fit: BoxFit.cover,
-            loadingBuilder: (c, w, i) =>
-                i == null ? w : Container(color: Tema.sunk),
+            // `loadingBuilder` DEĞİL, `frameBuilder`.
+            //
+            // Ölçüldü: CanvasKit'te `loadingProgress` yükleme boyunca null
+            // kalıyor, dolayısıyla loadingBuilder'daki yer tutucu hiç
+            // görünmüyordu. İlk açılışta manşetin yerinde 190 piksellik
+            // bembeyaz bir boşluk duruyor, fotoğraf gelince aniden
+            // doluyordu. `frameBuilder` ilk kare boyanana kadar
+            // çalıştığı için o boşluğu gerçekten kapatıyor.
+            //
+            // Yer tutucu düz gri değil kategori bandı: renk zaten haberin
+            // bölümünü söylüyor, yani bekleme anı da bilgi taşıyor.
+            frameBuilder: (c, cocuk, kare, esGirdi) {
+              if (kare != null) return cocuk;
+              return KategoriBandi(
+                haber: haber,
+                yukseklik: yukseklik,
+                kucuk: kucuk,
+              );
+            },
             errorBuilder: (c, e, s) =>
-                _KategoriBandi(haber: haber, yukseklik: yukseklik),
+                KategoriBandi(haber: haber, yukseklik: yukseklik, kucuk: kucuk),
           ),
         ),
-        // Atıf görselin üstünde, her zaman görünür.
-        Positioned(
-          left: 0,
-          bottom: 0,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            color: Colors.black.withValues(alpha: .55),
-            child: Text(
-              'Fotoğraf: ${haber.gorselKaynak}',
-              style: const TextStyle(fontSize: 10.5, color: Colors.white),
+        // Atıf yalnızca büyük görselde; 68 pikselik küçük görselde okunmuyor
+        // ve üstünü kaplıyor. Küçük satırda kaynak, haber sayfasında yazılı.
+        if (!kucuk)
+          Positioned(
+            left: 0,
+            bottom: 0,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              color: Colors.black.withValues(alpha: .62),
+              child: Text(
+                'Fotoğraf: ${haber.gorselKaynak}',
+                style: const TextStyle(
+                  fontFamily: Tema.sans,
+                  fontSize: 10.5,
+                  color: Colors.white,
+                ),
+              ),
             ),
           ),
-        ),
       ],
     );
   }
 }
 
-class _KategoriBandi extends StatelessWidget {
-  const _KategoriBandi({required this.haber, this.yukseklik = 74});
+/// Fotoğrafsız haberde görselin yerini alan kategori bandı.
+///
+/// Önceki hali kategori renginin %6'sıyla boyanmış açık bir zemin ve onun
+/// üstünde soluk eş yükselti çizgileriydi. Ekranda bozuk görsel gibi
+/// duruyordu — beyaza yakın bir dikdörtgen, içinde zor seçilen çizgiler.
+/// Şimdi zemin kategori renginin kendisi; sırt çizgileri beyazın düşük
+/// saydamlığıyla üstüne çiziliyor. Aynı Küre sırtı göndermesi, ama bu kez
+/// görünüyor ve "burada fotoğraf yok" demek yerine bir işaret oluyor.
+class KategoriBandi extends StatelessWidget {
+  const KategoriBandi({
+    super.key,
+    required this.haber,
+    this.yukseklik = 74,
+    this.kucuk = false,
+  });
+
   final Haber haber;
   final double yukseklik;
+  final bool kucuk;
 
-  static const _renkler = {
-    'Asayiş': Color(0xFF8C3A12),
-    'Kaza ve Acil': Color(0xFFA8431A),
-    'Gündem': Color(0xFF0D6B5A),
-    'Ekonomi': Color(0xFF2F5D7C),
-    'Tarım': Color(0xFF4A6B22),
-    'Eğitim': Color(0xFF5B4A8C),
-    'Spor': Color(0xFF1F6B4F),
-    'Kültür ve Turizm': Color(0xFF8A5A12),
-    'Sağlık': Color(0xFF8C2F4A),
-    'Kent ve Yönetim': Color(0xFF3D5A6C),
+  /// Kategori renkleri yeni palete göre yeniden seçildi: hepsi beyaz yazıyı
+  /// taşıyacak kadar koyu ve hepsi kâğıt zeminle aynı sıcaklıkta.
+  static const renkler = {
+    'Asayiş': Color(0xFF7A2E12),
+    'Kaza ve Acil': Color(0xFFA03412),
+    'Gündem': Color(0xFF0A5F4E),
+    'Ekonomi': Color(0xFF2A4E68),
+    'Tarım': Color(0xFF47651F),
+    'Eğitim': Color(0xFF4C3E7A),
+    'Spor': Color(0xFF15614A),
+    'Kültür ve Turizm': Color(0xFF7E5210),
+    'Sağlık': Color(0xFF7E2942),
+    'Kent ve Yönetim': Color(0xFF38505F),
   };
 
   @override
   Widget build(BuildContext context) {
-    final renk = _renkler[haber.kategoriAd] ?? Tema.patina;
+    final renk = renkler[haber.kategoriAd] ?? Tema.patina;
     return SizedBox(
       height: yukseklik,
-      child: CustomPaint(painter: _BantCizer(renk), size: Size.infinite),
+      width: double.infinity,
+      child: CustomPaint(
+        painter: _BantCizer(renk),
+        child: kucuk || haber.kategoriAd == null
+            ? null
+            : Center(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  child: Text(
+                    buyult(haber.kategoriAd!),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontFamily: Tema.sans,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 2.2,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+      ),
     );
   }
 }
@@ -443,24 +697,19 @@ class _BantCizer extends CustomPainter {
 
   @override
   void paint(Canvas tuval, Size olcu) {
-    tuval.drawRect(
-      Offset.zero & olcu,
-      Paint()..color = renk.withValues(alpha: 0.06),
-    );
-    // Üst vurgu
-    tuval.drawRect(Rect.fromLTWH(0, 0, olcu.width, 4), Paint()..color = renk);
-    // Eş yükselti çizgileri
-    for (var i = 0; i < 5; i++) {
+    tuval.drawRect(Offset.zero & olcu, Paint()..color = renk);
+    // Küre sırtları — beyazın düşük saydamlığıyla, koyu zemin üstünde.
+    for (var i = 0; i < 4; i++) {
       final kalem = Paint()
-        ..color = renk.withValues(alpha: 0.10 + i * 0.045)
+        ..color = Colors.white.withValues(alpha: 0.07 + i * 0.035)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.6;
+        ..strokeWidth = 1.4;
       final yol = Path();
-      final taban = olcu.height * (0.34 + i * 0.13);
-      final genlik = (5 - i) * 2.4;
+      final taban = olcu.height * (0.42 + i * 0.16);
+      final genlik = (4 - i) * 2.2;
       yol.moveTo(0, taban);
-      for (double x = 0; x <= olcu.width; x += 8) {
-        yol.lineTo(x, taban + math.sin(x / 52 + i * 0.7) * genlik);
+      for (double x = 0; x <= olcu.width; x += 7) {
+        yol.lineTo(x, taban + math.sin(x / 48 + i * 0.8) * genlik);
       }
       tuval.drawPath(yol, kalem);
     }
@@ -476,185 +725,71 @@ class _BolumBasligi extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Text(
-          metin.toUpperCase(),
-          style: const TextStyle(
-            fontSize: 11.5,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 1.2,
-            color: Tema.solgun,
-          ),
-        ),
-        const SizedBox(width: 12),
-        const Expanded(child: Divider()),
-      ],
-    );
-  }
-}
-
-class _Manset extends StatelessWidget {
-  const _Manset({required this.haber});
-  final Haber haber;
-
-  @override
-  Widget build(BuildContext context) {
-    final t = Theme.of(context);
-    return Card(
-      child: InkWell(
-        onTap: () => context.go('/haber/${haber.slug}'),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _KartBasi(haber: haber, yukseklik: 190),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 22, 24, 20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _Etiketler(haber: haber, buyuk: true),
-                  const SizedBox(height: 12),
-                  Text(
-                    haber.baslik,
-                    style: t.textTheme.displaySmall?.copyWith(fontSize: 27),
-                  ),
-                  if ((haber.spot ?? '').isNotEmpty) ...[
-                    const SizedBox(height: 10),
-                    Text(
-                      haber.spot!,
-                      style: t.textTheme.bodyLarge?.copyWith(
-                        color: Tema.solgun,
-                        height: 1.5,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 14),
-                  _KaynakSatiri(haber: haber),
-                ],
-              ),
-            ),
-          ],
+    return Container(
+      color: Tema.sunk,
+      padding: const EdgeInsets.fromLTRB(18, 11, 18, 11),
+      child: Text(
+        buyult(metin),
+        style: const TextStyle(
+          fontFamily: Tema.sans,
+          fontSize: 11.5,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 1.3,
+          color: Tema.solgun,
         ),
       ),
     );
   }
 }
 
-class _Kutu extends StatelessWidget {
-  const _Kutu({required this.haber});
-  final Haber haber;
+/// Bölüm · ilçe · zaman.
+///
+/// Renk ayrımı bilgiyi taşıyor: bölüm patina, ilçe bakır. İkisi farklı
+/// türde etiket ve okur bunu renkten ayırt ediyor.
+class Etiketler extends StatelessWidget {
+  const Etiketler({super.key, required this.haber, this.kucuk = false});
 
-  @override
-  Widget build(BuildContext context) {
-    final t = Theme.of(context);
-    return Card(
-      child: InkWell(
-        onTap: () => context.go('/haber/${haber.slug}'),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _KartBasi(haber: haber),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _Etiketler(haber: haber),
-                    const SizedBox(height: 9),
-                    Text(
-                      haber.baslik,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: t.textTheme.titleMedium?.copyWith(fontSize: 16),
-                    ),
-                    const SizedBox(height: 7),
-                    Expanded(
-                      child: Text(
-                        haber.spot ?? '',
-                        maxLines: 3,
-                        overflow: TextOverflow.ellipsis,
-                        style: t.textTheme.bodySmall?.copyWith(
-                          color: Tema.solgun,
-                          height: 1.45,
-                        ),
-                      ),
-                    ),
-                    _KaynakSatiri(haber: haber, kucuk: true),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _Etiketler extends StatelessWidget {
-  const _Etiketler({required this.haber, this.buyuk = false});
-  final Haber haber;
-  final bool buyuk;
-
-  @override
-  Widget build(BuildContext context) {
-    final ilce = haber.ilceler.where((b) => b.onaylandi).map((b) => b.ad);
-    return Wrap(
-      spacing: 8,
-      runSpacing: 5,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        if (haber.kategoriAd != null)
-          Text(
-            haber.kategoriAd!.toUpperCase(),
-            style: TextStyle(
-              fontSize: buyuk ? 11.5 : 10.5,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.9,
-              color: Tema.patina,
-            ),
-          ),
-        ...ilce.map(
-          (ad) => Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-            decoration: BoxDecoration(
-              border: Border.all(color: Tema.cizgi),
-              borderRadius: BorderRadius.circular(3),
-            ),
-            child: Text(
-              ad,
-              style: const TextStyle(fontSize: 10.5, color: Tema.solgun),
-            ),
-          ),
-        ),
-        Text(
-          DateFormat('d MMM HH:mm', 'tr').format(haber.olusturuldu),
-          style: const TextStyle(fontSize: 10.5, color: Tema.solgun),
-        ),
-      ],
-    );
-  }
-}
-
-/// Kaynak künyesi. Her haberde görünür — telif zemininin arayüz karşılığı.
-class _KaynakSatiri extends StatelessWidget {
-  const _KaynakSatiri({required this.haber, this.kucuk = false});
   final Haber haber;
   final bool kucuk;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final ilce = haber.ilceler.where((b) => b.onaylandi).map((b) => b.ad);
+    final olcu = kucuk ? 10.0 : 11.0;
+    return Wrap(
+      spacing: 7,
+      runSpacing: 3,
+      crossAxisAlignment: WrapCrossAlignment.center,
       children: [
-        Icon(Icons.link, size: kucuk ? 12 : 14, color: Tema.solgun),
-        const SizedBox(width: 5),
-        Flexible(
-          child: Text(
-            'Kaynak: ${haber.kaynakKisa}',
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(fontSize: kucuk ? 10.5 : 12, color: Tema.solgun),
+        if (haber.kategoriAd != null)
+          Text(
+            buyult(haber.kategoriAd!),
+            style: TextStyle(
+              fontFamily: Tema.sans,
+              fontSize: olcu,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.0,
+              color: Tema.patina,
+            ),
+          ),
+        ...ilce.map(
+          (ad) => Text(
+            buyult(ad),
+            style: TextStyle(
+              fontFamily: Tema.sans,
+              fontSize: olcu,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.0,
+              color: Tema.bakir,
+            ),
+          ),
+        ),
+        Text(
+          gecenSure(haber.olusturuldu),
+          style: TextStyle(
+            fontFamily: Tema.sans,
+            fontSize: olcu + 0.5,
+            color: Tema.solgun,
           ),
         ),
       ],
@@ -662,8 +797,26 @@ class _KaynakSatiri extends StatelessWidget {
   }
 }
 
-class _Bos extends StatelessWidget {
-  const _Bos();
+/// "2 saat önce" / "18 Eyl".
+///
+/// Yerel haberde tazelik bilginin parçası: bir yangının iki saat mi iki
+/// gün mü önce olduğu, haberin kendisi kadar önemli. Mutlak tarih ancak
+/// bir günü geçince anlam kazanıyor.
+String gecenSure(DateTime an) {
+  final fark = DateTime.now().difference(an);
+  if (fark.inMinutes < 1) return 'az önce';
+  if (fark.inMinutes < 60) return '${fark.inMinutes} dakika önce';
+  if (fark.inHours < 24) return '${fark.inHours} saat önce';
+  if (fark.inDays == 1) return 'dün';
+  if (fark.inDays < 7) return '${fark.inDays} gün önce';
+  return DateFormat('d MMM', 'tr').format(an);
+}
+
+class Bos extends StatelessWidget {
+  const Bos({super.key, this.baslik, this.aciklama});
+
+  final String? baslik;
+  final String? aciklama;
 
   @override
   Widget build(BuildContext context) {
@@ -672,17 +825,28 @@ class _Bos extends StatelessWidget {
         padding: const EdgeInsets.all(40),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(Icons.article_outlined, size: 44, color: Tema.solgun),
-            SizedBox(height: 14),
+          children: [
+            const Icon(Icons.article_outlined, size: 40, color: Tema.cizgiKuvvetli),
+            const SizedBox(height: 14),
             Text(
-              'Bu seçimde yayımlanmış haber yok.',
-              style: TextStyle(color: Tema.solgun),
+              baslik ?? 'Bu seçimde yayımlanmış haber yok.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontFamily: Tema.serif,
+                fontSize: 17,
+                color: Tema.murekkepIkincil,
+              ),
             ),
-            SizedBox(height: 6),
+            const SizedBox(height: 6),
             Text(
-              'Panelden haber yayınlandığında burada görünür.',
-              style: TextStyle(color: Tema.solgun, fontSize: 12.5),
+              aciklama ?? 'Panelden haber yayınlandığında burada görünür.',
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontFamily: Tema.sans,
+                fontSize: 13,
+                color: Tema.solgun,
+                height: 1.5,
+              ),
             ),
           ],
         ),
@@ -691,27 +855,55 @@ class _Bos extends StatelessWidget {
   }
 }
 
-class _Alt extends StatelessWidget {
-  const _Alt();
+class Alt extends StatelessWidget {
+  const Alt({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 1080),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 34, 20, 40),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
-              Divider(),
-              SizedBox(height: 14),
-              Text(
-                'Kastamonu Haber · haberler kaynak gösterilerek derlenmektedir. '
-                'Her haberin künyesinde özgün kaynağı belirtilir.',
-                style: TextStyle(fontSize: 12, color: Tema.solgun, height: 1.5),
-              ),
-            ],
+    return Container(
+      color: Tema.sunk,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1080),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(18, 26, 18, 34),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Kastamonu Haber',
+                  style: TextStyle(
+                    fontFamily: Tema.serif,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 17,
+                    color: Tema.murekkep,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Haberler kaynak gösterilerek derlenmektedir. Her haberin '
+                  'künyesinde özgün kaynağı belirtilir.',
+                  style: TextStyle(
+                    fontFamily: Tema.sans,
+                    fontSize: 12.5,
+                    color: Tema.solgun,
+                    height: 1.55,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                TextButton.icon(
+                  onPressed: () => context.go('/panel'),
+                  icon: const Icon(Icons.dashboard_outlined, size: 16),
+                  label: const Text('Panel'),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Tema.solgun,
+                    padding: EdgeInsets.zero,
+                    minimumSize: const Size(0, 36),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

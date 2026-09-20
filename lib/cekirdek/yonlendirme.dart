@@ -5,8 +5,11 @@ import 'package:go_router/go_router.dart';
 
 import '../ozellikler/anasayfa/ekran/anasayfa_ekrani.dart';
 import '../ozellikler/haber/ekran/haber_ekrani.dart';
+import '../ozellikler/ilcem/ekran/ilcem_ekrani.dart';
 import '../ozellikler/inceleme/ekran/giris_ekrani.dart';
 import '../ozellikler/inceleme/ekran/inceleme_ekrani.dart';
+import '../ozellikler/kaydedilen/ekran/kaydedilen_ekrani.dart';
+import 'kabuk.dart';
 import 'supabase.dart';
 
 /// Oturum değişimini yönlendiriciye duyuran köprü.
@@ -46,11 +49,39 @@ final yonlendirici = GoRouter(
     return null;
   },
   routes: [
-    GoRoute(path: '/', builder: (c, s) => const AnasayfaEkrani()),
-    GoRoute(
-      path: '/kategori/:slug',
-      builder: (c, s) => AnasayfaEkrani(kategoriSlug: s.pathParameters['slug']),
+    // Üç sekme tek kabuğun altında. `indexedStack` her dalın durumunu
+    // koruyor: İlçem'e geçip Gündem'e dönünce akış kaydırma konumunu
+    // kaybetmiyor.
+    StatefulShellRoute.indexedStack(
+      builder: (c, s, gezinti) => Kabuk(gezinti: gezinti),
+      branches: [
+        StatefulShellBranch(
+          routes: [
+            GoRoute(path: '/', builder: (c, s) => const AnasayfaEkrani()),
+            GoRoute(
+              path: '/kategori/:slug',
+              builder: (c, s) =>
+                  AnasayfaEkrani(kategoriSlug: s.pathParameters['slug']),
+            ),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(path: '/ilcem', builder: (c, s) => const IlcemEkrani()),
+          ],
+        ),
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/kaydettiklerim',
+              builder: (c, s) => const KaydedilenEkrani(),
+            ),
+          ],
+        ),
+      ],
     ),
+    // Haber sayfası kabuğun DIŞINDA: okurken alt çubuk yer kaplamasın.
+    // Kaydetme düğmesi zaten haberin kendi başlığında.
     GoRoute(
       path: '/haber/:slug',
       builder: (c, s) => HaberEkrani(slug: s.pathParameters['slug']!),
