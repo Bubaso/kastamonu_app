@@ -34,8 +34,13 @@ const SITE_ACIKLAMA =
 //
 // Tarım Portalı'nda görsel ve paylaşım adresleri koda dağılmıştı; alan adı
 // değişince paylaşım önizlemeleri sessizce eski adresi göstermeye devam
-// etti. Burada tek sabit var ve her şey ondan türüyor.
-const TABAN = process.env.SITE_TABAN || "https://kastamonuhaber.net";
+// etti. Burada tek sabit var ve her şey ondan türüyor: canonical, og:url,
+// sitemap girdileri, iç bağlantılar.
+//
+// Şu an Firebase'in varsayılan adresi. Gerçek alan adı alındığında
+// YALNIZCA bu satır değişecek — ya da dağıtımda `SITE_TABAN` ortam
+// değişkeni verilecek.
+const TABAN = process.env.SITE_TABAN || "https://kastamonuhaber-68645.web.app";
 
 const SUPABASE_URL =
   process.env.SUPABASE_URL || "https://vcwgcvzqdnjyoitdfhma.supabase.co";
@@ -90,6 +95,17 @@ function kacir(deger) {
     .replaceAll(">", "&gt;")
     .replaceAll('"', "&quot;")
     .replaceAll("'", "&#39;");
+}
+
+/** Künyede gösterilecek sade kaynak adı.
+ *
+ * Akış adları kategori eki taşıyor: "Haberler.com / Kastamonu". Okur için
+ * o ek gürültü; uygulamada da aynı sadeleştirme yapılıyor.
+ */
+function kaynakKisa(yayinci, kaynakAdi) {
+  const ad = String(yayinci || kaynakAdi || "").trim();
+  const parca = ad.split("/")[0].trim();
+  return parca || ad;
 }
 
 function duzMetin(html) {
@@ -233,7 +249,7 @@ export const haberRender = onRequest({ region: BOLGE }, async (req, res) => {
       ilceler.length ? `<p>${kacir(ilceler.join(", "))}</p>` : "",
       spot ? `<p><strong>${kacir(spot)}</strong></p>` : "",
       paragraflar,
-      `<p>Kaynak: ${kacir(h.yayinci || h.kaynak_adi)} — ` +
+      `<p>Kaynak: ${kacir(kaynakKisa(h.yayinci, h.kaynak_adi))} — ` +
       `<a href="${kacir(h.kaynak_url)}" rel="nofollow noopener">özgün haber</a></p>`,
       h.gorsel_kaynak
         ? `<p>Fotoğraf: ${kacir(h.gorsel_kaynak)}</p>` : "",

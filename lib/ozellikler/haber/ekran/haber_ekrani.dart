@@ -291,9 +291,7 @@ class _KaynakKutusu extends StatelessWidget {
           ),
           const SizedBox(height: 7),
           Text(
-            haber.yayinci?.isNotEmpty == true
-                ? '${haber.yayinci} · ${haber.kaynakAdi}'
-                : haber.kaynakAdi,
+            haber.kaynakKisa,
             style: t.textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w600,
             ),

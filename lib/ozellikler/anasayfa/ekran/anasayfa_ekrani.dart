@@ -371,10 +371,17 @@ class _KartBasi extends StatelessWidget {
         (haber.gorselKaynak ?? '').isNotEmpty &&
         (haber.gorselUrl ?? '').isNotEmpty;
     if (!foto) return _KategoriBandi(haber: haber, yukseklik: yukseklik);
+    // Yükseklik SABİT, oran DEĞİL.
+    //
+    // Önce `AspectRatio` kullanılmıştı: 1200/630 oranı geniş bir kartta
+    // 394 piksele çıkıyor, manşet dev bir görsele dönüşüyor ve ızgarada
+    // kartlar taşıyordu. Izgara sabit yükseklikli; kart başı da sabit
+    // olmalı ki fotoğraflı ve bantlı kartlar aynı boyda dursun.
     return Stack(
       children: [
-        AspectRatio(
-          aspectRatio: 1200 / 630,
+        SizedBox(
+          height: yukseklik,
+          width: double.infinity,
           child: Image.network(
             haber.gorselUrl!,
             fit: BoxFit.cover,
@@ -500,7 +507,7 @@ class _Manset extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _KartBasi(haber: haber, yukseklik: 132),
+            _KartBasi(haber: haber, yukseklik: 190),
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 22, 24, 20),
               child: Column(
@@ -645,8 +652,7 @@ class _KaynakSatiri extends StatelessWidget {
         const SizedBox(width: 5),
         Flexible(
           child: Text(
-            'Kaynak: ${haber.kaynakAdi}'
-            '${haber.yayinci?.isNotEmpty == true ? " · ${haber.yayinci}" : ""}',
+            'Kaynak: ${haber.kaynakKisa}',
             overflow: TextOverflow.ellipsis,
             style: TextStyle(fontSize: kucuk ? 10.5 : 12, color: Tema.solgun),
           ),

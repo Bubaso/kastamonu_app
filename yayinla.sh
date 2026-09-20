@@ -18,8 +18,13 @@ flutter build web --release \
   --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" \
   --dart-define=SUPABASE_URL="${SUPABASE_URL:-https://vcwgcvzqdnjyoitdfhma.supabase.co}"
 
+echo "▸ Uygulama kabuğu yeniden adlandırılıyor (index.html → app.html)…"
+# Firebase Hosting statik dosyayı yönlendirmeden önce sunuyor; index.html
+# yerinde kalırsa "/" isteği ana sayfa SSR fonksiyonuna hiç ulaşmıyor.
+mv build/web/index.html build/web/app.html
+
 echo "▸ Fonksiyon kabuğu güncelleniyor…"
-sed 's|\$FLUTTER_BASE_HREF|/|g' build/web/index.html > functions/shell.html
+sed 's|\$FLUTTER_BASE_HREF|/|g' build/web/app.html > functions/shell.html
 
 if ! grep -q 'SOCIAL_META_START' functions/shell.html; then
   echo "✗ functions/shell.html içinde SOCIAL_META_START yok."

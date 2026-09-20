@@ -40,6 +40,17 @@ class Haber {
     this.gorselKaynak,
   });
 
+  /// Künyede gösterilecek sade kaynak adı.
+  ///
+  /// Kaynak adları akış adından geliyor ve kategori eki taşıyor:
+  /// "Haberler.com / Kastamonu", "Google News / Spor". Okur için o ek
+  /// gürültü; ham ad veritabanında duruyor, gösterim sadeleştiriliyor.
+  String get kaynakKisa {
+    final ad = (yayinci?.isNotEmpty == true ? yayinci! : kaynakAdi).trim();
+    final parca = ad.split('/').first.trim();
+    return parca.isEmpty ? ad : parca;
+  }
+
   /// İlçe bağlarından en az biri editör onayı bekliyorsa kart uyarı taşır.
   bool get bagOnayiBekliyor => ilceler.any((i) => !i.onaylandi);
 
