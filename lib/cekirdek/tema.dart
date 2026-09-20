@@ -14,6 +14,7 @@ class Tema {
   static const murekkep = Color(0xFF16211D);
   static const solgun = Color(0xFF6E7A73);
   static const cizgi = Color(0xFFD6DDD8);
+  static const sunk = Color(0xFFEDF0EC);
 
   static const serif = 'Georgia';
 

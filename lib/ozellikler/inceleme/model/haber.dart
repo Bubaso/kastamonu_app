@@ -13,6 +13,7 @@ class Haber {
   final int onem;
   final bool diaspora;
   final String durum;
+  final String? gorselUrl;
   final DateTime olusturuldu;
   final List<IlceBagi> ilceler;
 
@@ -32,6 +33,7 @@ class Haber {
     this.govde,
     this.kategoriAd,
     this.yayinci,
+    this.gorselUrl,
   });
 
   /// İlçe bağlarından en az biri editör onayı bekliyorsa kart uyarı taşır.
@@ -54,6 +56,7 @@ class Haber {
       onem: (j['onem'] as num?)?.toInt() ?? 3,
       diaspora: j['diaspora'] as bool? ?? false,
       durum: j['durum'] as String? ?? 'inceleme',
+      gorselUrl: j['gorsel_url'] as String?,
       olusturuldu:
           DateTime.tryParse(j['olusturuldu'] as String? ?? '')?.toLocal() ??
           DateTime.now(),

@@ -11,7 +11,7 @@ class IncelemeDeposu {
   /// kaynak sözdizimi tek istekte getiriyor.
   static const _secim = '''
     id, slug, baslik, spot, govde, kaynak_adi, kaynak_url, yayinci,
-    katman, onem, diaspora, durum, olusturuldu,
+    katman, onem, diaspora, durum, olusturuldu, gorsel_url,
     kategoriler ( ad ),
     haber_ilce ( ilce_id, guven, kaynak, onaylandi, ilceler ( ad ) )
   ''';

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -200,7 +202,7 @@ class _Akis extends StatelessWidget {
                       crossAxisCount: genis ? 3 : 1,
                       mainAxisSpacing: 16,
                       crossAxisSpacing: 16,
-                      mainAxisExtent: 196,
+                      mainAxisExtent: 276,
                     ),
                     itemCount: kalan.length,
                     itemBuilder: (c, i) => _Kutu(haber: kalan[i]),
@@ -213,6 +215,77 @@ class _Akis extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Kategori bandı — akıştaki görsel öge.
+///
+/// Neden depodaki tipografik kart DEĞİL: o kart haberin başlığını
+/// taşıyor ve akışta başlık zaten hemen altında duruyor. İkisini üst üste
+/// göstermek aynı cümleyi iki kez okutuyordu — denendi, kötü görünüyor.
+/// Kartın asıl işi paylaşım önizlemesi (`og:image`), akış değil.
+///
+/// Buradaki bant ise yerel çiziliyor: kategori rengi ve Kastamonu'nun
+/// orman sırtlarını andıran eş yükselti motifi. Ağdan tek bayt inmiyor,
+/// akışa ritim ve kategori ayrımı katıyor, hiçbir şeyi temsil etmiyor.
+class _KategoriBandi extends StatelessWidget {
+  const _KategoriBandi({required this.haber, this.yukseklik = 74});
+  final Haber haber;
+  final double yukseklik;
+
+  static const _renkler = {
+    'Asayiş': Color(0xFF8C3A12),
+    'Kaza ve Acil': Color(0xFFA8431A),
+    'Gündem': Color(0xFF0D6B5A),
+    'Ekonomi': Color(0xFF2F5D7C),
+    'Tarım': Color(0xFF4A6B22),
+    'Eğitim': Color(0xFF5B4A8C),
+    'Spor': Color(0xFF1F6B4F),
+    'Kültür ve Turizm': Color(0xFF8A5A12),
+    'Sağlık': Color(0xFF8C2F4A),
+    'Kent ve Yönetim': Color(0xFF3D5A6C),
+  };
+
+  @override
+  Widget build(BuildContext context) {
+    final renk = _renkler[haber.kategoriAd] ?? Tema.patina;
+    return SizedBox(
+      height: yukseklik,
+      child: CustomPaint(painter: _BantCizer(renk), size: Size.infinite),
+    );
+  }
+}
+
+class _BantCizer extends CustomPainter {
+  const _BantCizer(this.renk);
+  final Color renk;
+
+  @override
+  void paint(Canvas tuval, Size olcu) {
+    tuval.drawRect(
+      Offset.zero & olcu,
+      Paint()..color = renk.withValues(alpha: 0.06),
+    );
+    // Üst vurgu
+    tuval.drawRect(Rect.fromLTWH(0, 0, olcu.width, 4), Paint()..color = renk);
+    // Eş yükselti çizgileri
+    for (var i = 0; i < 5; i++) {
+      final kalem = Paint()
+        ..color = renk.withValues(alpha: 0.10 + i * 0.045)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.6;
+      final yol = Path();
+      final taban = olcu.height * (0.34 + i * 0.13);
+      final genlik = (5 - i) * 2.4;
+      yol.moveTo(0, taban);
+      for (double x = 0; x <= olcu.width; x += 8) {
+        yol.lineTo(x, taban + math.sin(x / 52 + i * 0.7) * genlik);
+      }
+      tuval.drawPath(yol, kalem);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_BantCizer eski) => eski.renk != renk;
 }
 
 class _BolumBasligi extends StatelessWidget {
@@ -249,31 +322,37 @@ class _Manset extends StatelessWidget {
     return Card(
       child: InkWell(
         onTap: () => context.go('/haber/${haber.slug}'),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 22, 24, 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _Etiketler(haber: haber, buyuk: true),
-              const SizedBox(height: 12),
-              Text(
-                haber.baslik,
-                style: t.textTheme.displaySmall?.copyWith(fontSize: 27),
-              ),
-              if ((haber.spot ?? '').isNotEmpty) ...[
-                const SizedBox(height: 10),
-                Text(
-                  haber.spot!,
-                  style: t.textTheme.bodyLarge?.copyWith(
-                    color: Tema.solgun,
-                    height: 1.5,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _KategoriBandi(haber: haber, yukseklik: 56),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 22, 24, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _Etiketler(haber: haber, buyuk: true),
+                  const SizedBox(height: 12),
+                  Text(
+                    haber.baslik,
+                    style: t.textTheme.displaySmall?.copyWith(fontSize: 27),
                   ),
-                ),
-              ],
-              const SizedBox(height: 14),
-              _KaynakSatiri(haber: haber),
-            ],
-          ),
+                  if ((haber.spot ?? '').isNotEmpty) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      haber.spot!,
+                      style: t.textTheme.bodyLarge?.copyWith(
+                        color: Tema.solgun,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 14),
+                  _KaynakSatiri(haber: haber),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -290,34 +369,42 @@ class _Kutu extends StatelessWidget {
     return Card(
       child: InkWell(
         onTap: () => context.go('/haber/${haber.slug}'),
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _Etiketler(haber: haber),
-              const SizedBox(height: 9),
-              Text(
-                haber.baslik,
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-                style: t.textTheme.titleMedium?.copyWith(fontSize: 16),
-              ),
-              const SizedBox(height: 7),
-              Expanded(
-                child: Text(
-                  haber.spot ?? '',
-                  maxLines: 3,
-                  overflow: TextOverflow.ellipsis,
-                  style: t.textTheme.bodySmall?.copyWith(
-                    color: Tema.solgun,
-                    height: 1.45,
-                  ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _KategoriBandi(haber: haber),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _Etiketler(haber: haber),
+                    const SizedBox(height: 9),
+                    Text(
+                      haber.baslik,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: t.textTheme.titleMedium?.copyWith(fontSize: 16),
+                    ),
+                    const SizedBox(height: 7),
+                    Expanded(
+                      child: Text(
+                        haber.spot ?? '',
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                        style: t.textTheme.bodySmall?.copyWith(
+                          color: Tema.solgun,
+                          height: 1.45,
+                        ),
+                      ),
+                    ),
+                    _KaynakSatiri(haber: haber, kucuk: true),
+                  ],
                 ),
               ),
-              _KaynakSatiri(haber: haber, kucuk: true),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
