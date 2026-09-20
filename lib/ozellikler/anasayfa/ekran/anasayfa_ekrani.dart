@@ -9,11 +9,40 @@ import '../../../cekirdek/tema.dart';
 import '../../inceleme/model/haber.dart';
 import '../veri/anasayfa_deposu.dart';
 
-class AnasayfaEkrani extends ConsumerWidget {
-  const AnasayfaEkrani({super.key});
+class AnasayfaEkrani extends ConsumerStatefulWidget {
+  const AnasayfaEkrani({super.key, this.kategoriSlug});
+
+  /// `/kategori/:slug` ile gelindiğinde dolu; ana sayfada null.
+  final String? kategoriSlug;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<AnasayfaEkrani> createState() => _AnasayfaEkraniState();
+}
+
+class _AnasayfaEkraniState extends ConsumerState<AnasayfaEkrani> {
+  @override
+  void initState() {
+    super.initState();
+    // Adres çubuğundaki kategori, süzgeç durumuna yansıtılıyor. Böylece
+    // /kategori/spor paylaşılabilir bir adres oluyor; süzgeç yalnızca
+    // uygulama içi bir durum değil.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(kategoriSecimiSaglayici.notifier).sec(widget.kategoriSlug);
+    });
+  }
+
+  @override
+  void didUpdateWidget(AnasayfaEkrani eski) {
+    super.didUpdateWidget(eski);
+    if (eski.kategoriSlug != widget.kategoriSlug) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(kategoriSecimiSaglayici.notifier).sec(widget.kategoriSlug);
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final haberler = ref.watch(yayindakilerSaglayici);
 
     return Scaffold(
@@ -22,6 +51,7 @@ class AnasayfaEkrani extends ConsumerWidget {
         child: CustomScrollView(
           slivers: [
             const _Kunye(),
+            const _KategoriCubugu(),
             const _IlceCubugu(),
             haberler.when(
               loading: () => const SliverFillRemaining(
@@ -102,6 +132,101 @@ class _Kunye extends StatelessWidget {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Kategori çubuğu — gazetenin bölüm satırı.
+///
+/// Kategoriler birincil gezinme; ilçe süzgeci onun altında bir daraltma.
+/// Bölüm seçimi adrese yazılıyor (`/kategori/spor`), yani paylaşılabilir.
+class _KategoriCubugu extends ConsumerWidget {
+  const _KategoriCubugu();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final kategoriler = ref.watch(kategoriListesiSaglayici);
+    final secili = ref.watch(kategoriSecimiSaglayici);
+
+    return SliverToBoxAdapter(
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(bottom: BorderSide(color: Tema.cizgi)),
+        ),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1080),
+            child: SizedBox(
+              height: 46,
+              child: kategoriler.when(
+                loading: () => const SizedBox.shrink(),
+                error: (_, _) => const SizedBox.shrink(),
+                data: (liste) => ListView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 18),
+                  children: [
+                    _baglanti(context, 'Tümü', null, secili == null),
+                    ...liste.map(
+                      (k) => _baglanti(
+                        context,
+                        k.ad,
+                        k.slug,
+                        secili == k.slug,
+                        adet: k.adet,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _baglanti(
+    BuildContext c,
+    String ad,
+    String? slug,
+    bool sec, {
+    int? adet,
+  }) {
+    return InkWell(
+      onTap: () => c.go(slug == null ? '/' : '/kategori/$slug'),
+      child: Container(
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        decoration: BoxDecoration(
+          border: Border(
+            bottom: BorderSide(
+              color: sec ? Tema.patina : Colors.transparent,
+              width: 2.5,
+            ),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              ad,
+              style: TextStyle(
+                fontSize: 13.5,
+                fontWeight: sec ? FontWeight.w700 : FontWeight.w500,
+                color: sec ? Tema.patina : Tema.murekkep,
+              ),
+            ),
+            if (adet != null) ...[
+              const SizedBox(width: 5),
+              Text(
+                '$adet',
+                style: const TextStyle(fontSize: 11, color: Tema.solgun),
+              ),
+            ],
+          ],
         ),
       ),
     );
@@ -202,7 +327,7 @@ class _Akis extends StatelessWidget {
                       crossAxisCount: genis ? 3 : 1,
                       mainAxisSpacing: 16,
                       crossAxisSpacing: 16,
-                      mainAxisExtent: 276,
+                      mainAxisExtent: 332,
                     ),
                     itemCount: kalan.length,
                     itemBuilder: (c, i) => _Kutu(haber: kalan[i]),
@@ -236,7 +361,7 @@ class _Akis extends StatelessWidget {
 /// taşıyor ve başlık zaten hemen altında; denendi, aynı cümle iki kez
 /// okunuyordu. Kartın yeri paylaşım önizlemesi (og:image).
 class _KartBasi extends StatelessWidget {
-  const _KartBasi({required this.haber, this.yukseklik = 74});
+  const _KartBasi({required this.haber, this.yukseklik = 108});
   final Haber haber;
   final double yukseklik;
 
@@ -375,7 +500,7 @@ class _Manset extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _KartBasi(haber: haber, yukseklik: 56),
+            _KartBasi(haber: haber, yukseklik: 132),
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 22, 24, 20),
               child: Column(

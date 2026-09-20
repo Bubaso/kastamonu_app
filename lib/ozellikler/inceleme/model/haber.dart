@@ -6,6 +6,7 @@ class Haber {
   final String? spot;
   final String? govde;
   final String? kategoriAd;
+  final String? kategoriSlug;
   final String kaynakAdi;
   final String kaynakUrl;
   final String? yayinci;
@@ -33,6 +34,7 @@ class Haber {
     this.spot,
     this.govde,
     this.kategoriAd,
+    this.kategoriSlug,
     this.yayinci,
     this.gorselUrl,
     this.gorselKaynak,
@@ -51,6 +53,7 @@ class Haber {
       spot: j['spot'] as String?,
       govde: j['govde'] as String?,
       kategoriAd: kategori is Map ? kategori['ad'] as String? : null,
+      kategoriSlug: kategori is Map ? kategori['slug'] as String? : null,
       kaynakAdi: j['kaynak_adi'] as String? ?? '',
       kaynakUrl: j['kaynak_url'] as String? ?? '',
       yayinci: j['yayinci'] as String?,

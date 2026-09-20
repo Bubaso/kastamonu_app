@@ -13,7 +13,7 @@ class AnasayfaDeposu {
   static const _secim = '''
     id, slug, baslik, spot, govde, kaynak_adi, kaynak_url, yayinci,
     katman, onem, diaspora, durum, olusturuldu, gorsel_url, gorsel_kaynak,
-    kategoriler ( ad ),
+    kategoriler ( ad, slug ),
     haber_ilce ( ilce_id, guven, kaynak, onaylandi, ilceler ( ad, sira ) )
   ''';
 
@@ -57,6 +57,43 @@ final tumYayindakilerSaglayici = FutureProvider<List<Haber>>((ref) {
   return ref.watch(anasayfaDeposuSaglayici).tumYayindakiler();
 });
 
+/// Yayımlanmış haberi olan kategoriler.
+///
+/// İlçe süzgecindeki kuralın aynısı: boş kategori gösterilmiyor. Ölçümde
+/// bazı kategorilere (Sağlık, Spor) günlerce haber gelmeyebiliyor;
+/// tıklayınca boş çıkan bir bölüm, olmayan bölümden kötü.
+final kategoriListesiSaglayici =
+    Provider<AsyncValue<List<({String slug, String ad, int adet})>>>((ref) {
+      return ref.watch(tumYayindakilerSaglayici).whenData((liste) {
+        final sayac = <String, ({String slug, String ad, int adet})>{};
+        for (final h in liste) {
+          final slug = h.kategoriSlug;
+          final ad = h.kategoriAd;
+          if (slug == null || ad == null) continue;
+          final onceki = sayac[slug];
+          sayac[slug] = (slug: slug, ad: ad, adet: (onceki?.adet ?? 0) + 1);
+        }
+        final sirali = sayac.values.toList()
+          ..sort(
+            (a, b) => b.adet != a.adet
+                ? b.adet.compareTo(a.adet)
+                : a.ad.compareTo(b.ad),
+          );
+        return sirali;
+      });
+    });
+
+/// Seçili kategori; null = tümü.
+class KategoriSecimi extends Notifier<String?> {
+  @override
+  String? build() => null;
+  void sec(String? slug) => state = slug;
+}
+
+final kategoriSecimiSaglayici = NotifierProvider<KategoriSecimi, String?>(
+  KategoriSecimi.new,
+);
+
 /// Seçili ilçe süzgeci; null = il geneli.
 class IlceSuzgeci extends Notifier<String?> {
   @override
@@ -69,11 +106,21 @@ final ilceSuzgeciSaglayici = NotifierProvider<IlceSuzgeci, String?>(
 );
 
 /// Ana sayfa akışı: tek listeden bellekte süzülüyor.
+///
+/// İki süzgeç birlikte çalışıyor — kategori (bölüm) ve ilçe (yer).
+/// İkisi de aynı listeden, ek sorgu yok.
 final yayindakilerSaglayici = Provider<AsyncValue<List<Haber>>>((ref) {
   final ilce = ref.watch(ilceSuzgeciSaglayici);
+  final kategori = ref.watch(kategoriSecimiSaglayici);
   return ref.watch(tumYayindakilerSaglayici).whenData((liste) {
-    if (ilce == null) return liste;
-    return liste.where((h) => onayliIlceler(h).contains(ilce)).toList();
+    var sonuc = liste;
+    if (kategori != null) {
+      sonuc = sonuc.where((h) => h.kategoriSlug == kategori).toList();
+    }
+    if (ilce != null) {
+      sonuc = sonuc.where((h) => onayliIlceler(h).contains(ilce)).toList();
+    }
+    return sonuc;
   });
 });
 
@@ -82,9 +129,16 @@ final yayindakilerSaglayici = Provider<AsyncValue<List<Haber>>>((ref) {
 /// 20 ilçenin tamamını listelemek yanıltıcı olurdu: ölçümde katman 1+2
 /// akışında ilçelerin yarısından fazlasına hiç haber gelmiyor. Tıklayınca
 /// boş liste çıkan bir süzgeç, olmayan süzgeçten kötüdür.
+/// Süzgeçteki ilçeler seçili kategoriye göre daralıyor: "Spor" seçiliyken
+/// spor haberi olmayan ilçeyi göstermenin anlamı yok. Tıklayınca boş
+/// çıkan süzgeç, olmayan süzgeçten kötü — aynı kural kategorilerde de var.
 final ilceListesiSaglayici =
     Provider<AsyncValue<List<({String id, String ad})>>>((ref) {
-      return ref.watch(tumYayindakilerSaglayici).whenData((liste) {
+      final kategori = ref.watch(kategoriSecimiSaglayici);
+      return ref.watch(tumYayindakilerSaglayici).whenData((tumu) {
+        final liste = kategori == null
+            ? tumu
+            : tumu.where((h) => h.kategoriSlug == kategori).toList();
         final gorulen = <String, ({String id, String ad, int sira})>{};
         for (final h in liste) {
           for (final b in h.ilceler) {

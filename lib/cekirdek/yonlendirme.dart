@@ -48,6 +48,10 @@ final yonlendirici = GoRouter(
   routes: [
     GoRoute(path: '/', builder: (c, s) => const AnasayfaEkrani()),
     GoRoute(
+      path: '/kategori/:slug',
+      builder: (c, s) => AnasayfaEkrani(kategoriSlug: s.pathParameters['slug']),
+    ),
+    GoRoute(
       path: '/haber/:slug',
       builder: (c, s) => HaberEkrani(slug: s.pathParameters['slug']!),
     ),
