@@ -1,0 +1,11 @@
+{
+  "name": "kastamonu-ssr",
+  "description": "Kastamonu Haber — sunucu tarafı render",
+  "type": "module",
+  "engines": { "node": "22" },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-functions": "^6.0.0"
+  },
+  "private": true
+}
