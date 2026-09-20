@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../cekirdek/supabase.dart';
 
+import '../../hat/ekran/hat_paneli.dart';
 import '../veri/inceleme_deposu.dart';
 import 'haber_karti.dart';
 
@@ -56,6 +57,7 @@ class IncelemeEkrani extends ConsumerWidget {
       ),
       body: Column(
         children: [
+          HatPaneli(onBitti: tazele),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),

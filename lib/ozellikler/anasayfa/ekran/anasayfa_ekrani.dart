@@ -227,6 +227,56 @@ class _Akis extends StatelessWidget {
 /// Buradaki bant ise yerel çiziliyor: kategori rengi ve Kastamonu'nun
 /// orman sırtlarını andıran eş yükselti motifi. Ağdan tek bayt inmiyor,
 /// akışa ritim ve kategori ayrımı katıyor, hiçbir şeyi temsil etmiyor.
+/// Kart başı görseli.
+///
+/// Kural: kaynağın GERÇEK fotoğrafı varsa o gösteriliyor, künyesinde
+/// yayıncı adıyla birlikte. Yoksa kategori bandı çiziliyor.
+///
+/// Tipografik kart burada GÖSTERİLMİYOR — o kart haberin başlığını
+/// taşıyor ve başlık zaten hemen altında; denendi, aynı cümle iki kez
+/// okunuyordu. Kartın yeri paylaşım önizlemesi (og:image).
+class _KartBasi extends StatelessWidget {
+  const _KartBasi({required this.haber, this.yukseklik = 74});
+  final Haber haber;
+  final double yukseklik;
+
+  @override
+  Widget build(BuildContext context) {
+    final foto =
+        (haber.gorselKaynak ?? '').isNotEmpty &&
+        (haber.gorselUrl ?? '').isNotEmpty;
+    if (!foto) return _KategoriBandi(haber: haber, yukseklik: yukseklik);
+    return Stack(
+      children: [
+        AspectRatio(
+          aspectRatio: 1200 / 630,
+          child: Image.network(
+            haber.gorselUrl!,
+            fit: BoxFit.cover,
+            loadingBuilder: (c, w, i) =>
+                i == null ? w : Container(color: Tema.sunk),
+            errorBuilder: (c, e, s) =>
+                _KategoriBandi(haber: haber, yukseklik: yukseklik),
+          ),
+        ),
+        // Atıf görselin üstünde, her zaman görünür.
+        Positioned(
+          left: 0,
+          bottom: 0,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            color: Colors.black.withValues(alpha: .55),
+            child: Text(
+              'Fotoğraf: ${haber.gorselKaynak}',
+              style: const TextStyle(fontSize: 10.5, color: Colors.white),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _KategoriBandi extends StatelessWidget {
   const _KategoriBandi({required this.haber, this.yukseklik = 74});
   final Haber haber;
@@ -325,7 +375,7 @@ class _Manset extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _KategoriBandi(haber: haber, yukseklik: 56),
+            _KartBasi(haber: haber, yukseklik: 56),
             Padding(
               padding: const EdgeInsets.fromLTRB(24, 22, 24, 20),
               child: Column(
@@ -372,7 +422,7 @@ class _Kutu extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _KategoriBandi(haber: haber),
+            _KartBasi(haber: haber),
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),

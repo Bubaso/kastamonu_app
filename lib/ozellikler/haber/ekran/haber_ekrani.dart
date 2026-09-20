@@ -115,7 +115,33 @@ class _GovdeState extends ConsumerState<_Govde> {
                       ),
                     ],
                     const SizedBox(height: 20),
-                    const Divider(),
+                    // Gerçek kaynak fotoğrafı varsa gösteriliyor; atıf
+                    // hemen altında. Tipografik karta düşüldüyse burada
+                    // görsel yok — başlık zaten sayfanın tepesinde.
+                    if ((haber.gorselKaynak ?? '').isNotEmpty &&
+                        (haber.gorselUrl ?? '').isNotEmpty) ...[
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: AspectRatio(
+                          aspectRatio: 1200 / 630,
+                          child: Image.network(
+                            haber.gorselUrl!,
+                            fit: BoxFit.cover,
+                            errorBuilder: (c, e, s) => const SizedBox.shrink(),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 7),
+                      Text(
+                        'Fotoğraf: ${haber.gorselKaynak}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: Tema.solgun,
+                        ),
+                      ),
+                      const SizedBox(height: 22),
+                    ] else
+                      const Divider(),
                     const SizedBox(height: 20),
                     ...paragraflar.map(
                       (p) => Padding(
