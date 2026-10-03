@@ -113,24 +113,33 @@ class _AnasayfaEkraniState extends ConsumerState<AnasayfaEkrani> {
   }
 }
 
-/// Künye — 92 pikselden 44'e.
+/// Künye — 92 pikselden 48'e.
 ///
-/// Tarih künyeden çıkıp sağa, tek satıra geçti. Kazanılan 48 piksel
-/// doğrudan habere gidiyor.
-class Kunye extends StatelessWidget {
+/// Tarih künyeden çıkıp sağa geçti. Kazanılan 44 piksel doğrudan habere
+/// gidiyor.
+///
+/// Tarih bir süre yalnızca telefonda vardı: geniş ekranda gezinti onu
+/// düşürüyordu ve masaüstü okuru sayfanın hangi güne ait olduğunu hiçbir
+/// yerden okuyamıyordu. Artık her iki ekranda da var ve yanında **son
+/// güncelleme** duruyor — bir haber sitesinin canlı olduğunu söyleyen tek
+/// satır bu. Damga en yeni yayının kendi damgasından okunuyor, yani
+/// süslemiyor: hat durursa satır da durduğunu söylüyor.
+class Kunye extends ConsumerWidget {
   const Kunye({super.key, this.baslik = 'Kastamonu Haber'});
 
   final String baslik;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final genis = !Kabuk.darMi(context);
+    final enYeni = ref.watch(tumYayindakilerSaglayici).asData?.value.firstOrNull;
+    final tarih = _Tarih(enYeni: enYeni?.zaman);
     return SliverAppBar(
       backgroundColor: Colors.white,
       floating: true,
       pinned: false,
       elevation: 0,
-      toolbarHeight: genis ? 60 : 44,
+      toolbarHeight: genis ? 60 : 48,
       titleSpacing: 0,
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(2),
@@ -157,8 +166,15 @@ class Kunye extends StatelessWidget {
                     ),
                   ),
                 ),
-                const Spacer(),
                 if (genis) ...[
+                  Container(
+                    width: 1,
+                    height: 28,
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    color: Tema.cizgi,
+                  ),
+                  tarih,
+                  const Spacer(),
                   const GenisGezinti(),
                   IconButton(
                     onPressed: () => context.go('/panel'),
@@ -166,23 +182,69 @@ class Kunye extends StatelessWidget {
                     color: Tema.solgun,
                     tooltip: 'Panel',
                   ),
-                ] else
+                ] else ...[
+                  const Spacer(),
                   Padding(
                     padding: const EdgeInsets.only(right: 6),
-                    child: Text(
-                      DateFormat('d MMMM, EEEE', 'tr').format(DateTime.now()),
-                      style: const TextStyle(
-                        fontFamily: Tema.sans,
-                        fontSize: 12,
-                        color: Tema.solgun,
-                      ),
-                    ),
+                    child: tarih,
                   ),
+                ],
               ],
             ),
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Künyenin tarih bloğu: bugünün tarihi ve son yayının damgası.
+class _Tarih extends StatelessWidget {
+  const _Tarih({this.enYeni});
+
+  /// En yeni yayının zamanı. Liste henüz gelmediyse null.
+  final DateTime? enYeni;
+
+  /// Aynı gün ise saat, değilse göreli.
+  ///
+  /// "son güncelleme 09:47" ile "son güncelleme 12 gün önce" aynı satırda
+  /// aynı işi görüyor: ikisi de doğruyu söylüyor. İkincisi rahatsız edici
+  /// ama hat durduğunda okurun bunu görmesi gerekiyor — süsleyip "bugün"
+  /// demek, sayfanın tek canlılık ölçüsünü de yalana çevirirdi.
+  static String _damga(DateTime an) {
+    final simdi = DateTime.now();
+    final ayniGun =
+        simdi.year == an.year && simdi.month == an.month && simdi.day == an.day;
+    return ayniGun ? DateFormat('HH:mm', 'tr').format(an) : gecenSure(an);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          DateFormat('d MMMM, EEEE', 'tr').format(DateTime.now()),
+          style: const TextStyle(
+            fontFamily: Tema.sans,
+            fontSize: 12,
+            height: 1.25,
+            fontWeight: FontWeight.w500,
+            color: Tema.murekkepIkincil,
+          ),
+        ),
+        if (enYeni != null)
+          Text(
+            'son güncelleme ${_damga(enYeni!)}',
+            style: const TextStyle(
+              fontFamily: Tema.sans,
+              fontSize: 10.5,
+              height: 1.3,
+              color: Tema.solgun,
+            ),
+          ),
+      ],
     );
   }
 }
@@ -471,9 +533,15 @@ class _UstBlok extends StatelessWidget {
 
 /// Manşet.
 ///
-/// Spot yalnızca geniş ekranda gösteriliyor. Telefonda spot, manşetin
-/// hemen altında dört satır gri metin demek — ölçümde tam olarak bu, ikinci
-/// başlığı ekranın dışına itiyordu.
+/// Spot her iki ekranda da var, ama satır sayısı farklı: geniş ekranda üç,
+/// telefonda iki.
+///
+/// Telefonda spot bir kez tamamen kaldırılmıştı ve gerekçesi ölçümdü —
+/// manşetin altındaki DÖRT satır gri metin ikinci başlığı ekranın dışına
+/// itiyordu. Doğru olan kaldırmak değil sınırlamaktı: iki satır 46 piksel,
+/// dördü 92. Yayındaki haberin 41'inin 41'inde spot var ve akış onu tek
+/// bir yerde gösteriyordu; okur neredeyse hiçbir yerde tıklamadan önce ne
+/// okuyacağını bilmiyordu. Başlık dikkati çeker, tıklanan şey spottur.
 class Manset extends StatelessWidget {
   const Manset({super.key, required this.haber, this.genis = false});
 
@@ -513,16 +581,16 @@ class Manset extends StatelessWidget {
                         color: Tema.murekkep,
                       ),
                     ),
-                    if (genis && (haber.spot ?? '').isNotEmpty) ...[
-                      const SizedBox(height: 10),
+                    if ((haber.spot ?? '').isNotEmpty) ...[
+                      SizedBox(height: genis ? 10 : 8),
                       Text(
                         haber.spot!,
-                        maxLines: 3,
+                        maxLines: genis ? 3 : 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: Tema.serif,
-                          fontSize: 17,
-                          height: 1.5,
+                          fontSize: genis ? 17 : 16,
+                          height: 1.45,
                           color: Tema.murekkepIkincil,
                         ),
                       ),
@@ -579,6 +647,23 @@ class Odak extends StatelessWidget {
                         color: Tema.murekkep,
                       ),
                     ),
+                    // Odak zaten akışın "nefes alan" bloğu; iki satır spot
+                    // onu bir habere dönüştürüyor. Satır'da spot YOK —
+                    // yoğunluğu ayakta tutan şey o.
+                    if ((haber.spot ?? '').isNotEmpty) ...[
+                      const SizedBox(height: 7),
+                      Text(
+                        haber.spot!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          fontFamily: Tema.serif,
+                          fontSize: 15.5,
+                          height: 1.45,
+                          color: Tema.murekkepIkincil,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -790,6 +875,38 @@ class KategoriBandi extends StatelessWidget {
   final double yukseklik;
   final bool kucuk;
 
+  /// Küçük boyda gösterilen üç harfli damga.
+  ///
+  /// Küçük görsel önce tamamen yazısızdı: 104×76'lık blokta kategori adı
+  /// sığmadığı için hiçbir şey basılmıyordu ve geriye anlamsız renkli bir
+  /// dikdörtgen kalıyordu — ekranda bozuk görsel gibi okunuyor. Yayındaki
+  /// haberin %30'unun fotoğrafı yok, yani akışta aynı anda dört tanesi
+  /// birden görülebiliyor.
+  ///
+  /// Kısaltmalar elle yazılı: otomatik kesme Türkçede yanlış üretiyor
+  /// ("Eğitim" → "EGI") ve "Kaza ve Acil" gibi iki kelimelilerde anlamsız
+  /// kalıyor.
+  static const kisaltmalar = {
+    'Asayiş': 'ASY',
+    'Kaza ve Acil': 'KAZ',
+    'Gündem': 'GND',
+    'Ekonomi': 'EKO',
+    'Tarım': 'TAR',
+    'Eğitim': 'EĞT',
+    'Spor': 'SPR',
+    'Kültür ve Turizm': 'KÜL',
+    'Sağlık': 'SAĞ',
+    'Kent ve Yönetim': 'KNT',
+  };
+
+  /// Listede olmayan bir kategori için yedek: ilk üç harf, Türkçe büyütmeyle.
+  static String kisalt(String ad) {
+    final hazir = kisaltmalar[ad];
+    if (hazir != null) return hazir;
+    final sade = ad.trim();
+    return buyult(sade.length <= 3 ? sade : sade.substring(0, 3));
+  }
+
   /// Kategori renkleri yeni palete göre yeniden seçildi: hepsi beyaz yazıyı
   /// taşıyacak kadar koyu ve hepsi kâğıt zeminle aynı sıcaklıkta.
   static const renkler = {
@@ -813,19 +930,21 @@ class KategoriBandi extends StatelessWidget {
       width: double.infinity,
       child: CustomPaint(
         painter: _BantCizer(renk),
-        child: kucuk || haber.kategoriAd == null
+        child: haber.kategoriAd == null
             ? null
             : Center(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  padding: EdgeInsets.symmetric(horizontal: kucuk ? 4 : 12),
                   child: Text(
-                    buyult(haber.kategoriAd!),
+                    kucuk
+                        ? kisalt(haber.kategoriAd!)
+                        : buyult(haber.kategoriAd!),
                     textAlign: TextAlign.center,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: Tema.sans,
-                      fontSize: 12,
+                      fontSize: kucuk ? 13 : 12,
                       fontWeight: FontWeight.w700,
-                      letterSpacing: 2.2,
+                      letterSpacing: kucuk ? 1.4 : 2.2,
                       color: Colors.white,
                     ),
                   ),
