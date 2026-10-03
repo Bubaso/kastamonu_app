@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -59,17 +60,38 @@ class _AnasayfaEkraniState extends ConsumerState<AnasayfaEkrani> {
   Widget build(BuildContext context) {
     final haberler = ref.watch(yayindakilerSaglayici);
 
+    // Kategori sayfasında künye bölüm adını taşıyor: /kategori/spor
+    // paylaşılabilir bir adres ve açıldığında kendini tanıtmalı.
+    // Bölüm çubuğundaki vurgu tek başına yeterli değil — paylaşılan
+    // bağlantıyla gelen okur çubuğu değil, sayfanın başını okuyor.
+    final kategoriAdi = widget.kategoriSlug == null
+        ? null
+        : ref
+            .watch(kategoriListesiSaglayici)
+            .asData
+            ?.value
+            .where((k) => k.slug == widget.kategoriSlug)
+            .map((k) => k.ad)
+            .firstOrNull;
+
     return RefreshIndicator(
-      onRefresh: () async => ref.invalidate(tumYayindakilerSaglayici),
+      onRefresh: () async {
+        HapticFeedback.lightImpact();
+        return ref.invalidate(tumYayindakilerSaglayici);
+      },
       child: CustomScrollView(
         slivers: [
-          const Kunye(),
+          Kunye(baslik: kategoriAdi ?? 'Kastamonu Haber'),
           const _SonDakika(),
           const _KategoriCubugu(),
           haberler.when(
-            loading: () => const SliverFillRemaining(
-              hasScrollBody: false,
-              child: Center(child: CircularProgressIndicator()),
+            loading: () => SliverToBoxAdapter(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1080),
+                  child: const Iskelet(),
+                ),
+              ),
             ),
             error: (h, _) => SliverFillRemaining(
               hasScrollBody: false,
@@ -103,57 +125,60 @@ class Kunye extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final genis = !Kabuk.darMi(context);
-    return SliverToBoxAdapter(
-      child: DecoratedBox(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          // Künye ile sayfa arasında gazete kuralı: kalın çizgi.
-          border: Border(bottom: BorderSide(color: Tema.murekkep, width: 2)),
-        ),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 1080),
-            child: Padding(
-              padding: EdgeInsets.fromLTRB(18, genis ? 14 : 11, 12, genis ? 14 : 11),
-              child: Row(
-                children: [
-                  GestureDetector(
-                    onTap: () => context.go('/'),
+    return SliverAppBar(
+      backgroundColor: Colors.white,
+      floating: true,
+      pinned: false,
+      elevation: 0,
+      toolbarHeight: genis ? 60 : 44,
+      titleSpacing: 0,
+      bottom: PreferredSize(
+        preferredSize: const Size.fromHeight(2),
+        child: Container(color: Tema.murekkep, height: 2),
+      ),
+      flexibleSpace: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1080),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(18, genis ? 14 : 11, 12, genis ? 14 : 11),
+            child: Row(
+              children: [
+                GestureDetector(
+                  onTap: () => context.go('/'),
+                  child: Text(
+                    baslik,
+                    style: TextStyle(
+                      fontFamily: Tema.serif,
+                      fontWeight: FontWeight.w700,
+                      fontSize: genis ? 26 : 21,
+                      letterSpacing: -0.6,
+                      height: 1.05,
+                      color: Tema.murekkep,
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                if (genis) ...[
+                  const GenisGezinti(),
+                  IconButton(
+                    onPressed: () => context.go('/panel'),
+                    icon: const Icon(Icons.dashboard_outlined, size: 18),
+                    color: Tema.solgun,
+                    tooltip: 'Panel',
+                  ),
+                ] else
+                  Padding(
+                    padding: const EdgeInsets.only(right: 6),
                     child: Text(
-                      baslik,
-                      style: TextStyle(
-                        fontFamily: Tema.serif,
-                        fontWeight: FontWeight.w700,
-                        fontSize: genis ? 26 : 21,
-                        letterSpacing: -0.6,
-                        height: 1.05,
-                        color: Tema.murekkep,
+                      DateFormat('d MMMM, EEEE', 'tr').format(DateTime.now()),
+                      style: const TextStyle(
+                        fontFamily: Tema.sans,
+                        fontSize: 12,
+                        color: Tema.solgun,
                       ),
                     ),
                   ),
-                  const Spacer(),
-                  if (genis) ...[
-                    const GenisGezinti(),
-                    IconButton(
-                      onPressed: () => context.go('/panel'),
-                      icon: const Icon(Icons.dashboard_outlined, size: 18),
-                      color: Tema.solgun,
-                      tooltip: 'Panel',
-                    ),
-                  ] else
-                    Padding(
-                      padding: const EdgeInsets.only(right: 6),
-                      child: Text(
-                        DateFormat('d MMMM, EEEE', 'tr').format(DateTime.now()),
-                        style: const TextStyle(
-                          fontFamily: Tema.sans,
-                          fontSize: 12,
-                          color: Tema.solgun,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
+              ],
             ),
           ),
         ),
@@ -216,6 +241,16 @@ class _SonDakika extends ConsumerWidget {
                       margin: const EdgeInsets.symmetric(horizontal: 10),
                       color: Colors.white54,
                     ),
+                    // Kayan yazı DEĞİL.
+                    //
+                    // Bandı kayan yazıyla denemek yaygın bir refleks ama
+                    // bu portalın okur kitlesinde yanlış: ortanca yaş 43,3
+                    // ve hareket eden metin hem okunması zor hem geri
+                    // dönülemez — gözden kaçan kelimeyi tekrar okumak için
+                    // turu beklemek gerekiyor. WCAG 2.2.2 de hareketli
+                    // içeriğin durdurulabilir olmasını istiyor.
+                    // Başlık sığmıyorsa kırpılıyor; tamamı bir dokunuş
+                    // ötede zaten.
                     Expanded(
                       child: Text(
                         h.baslik,
@@ -316,100 +351,123 @@ class _KategoriCubugu extends ConsumerWidget {
   }
 }
 
-/// Akış: bir manşet, sonra satırlar.
+/// Akış — fihristin kendisi.
+///
+/// Omurga **tazelik**: en yeni haber üstte, aşağı indikçe eskiye gidiyor.
+/// Şehir portalında okurun sorduğu soru "yeni ne var"; bölüme göre
+/// gruplamak o soruyu cevapsız bırakıyor, çünkü bir bölümün en yenisiyle
+/// bir başkasının üç günlüğü yan yana geliyor. Bölüme göre okumak isteyen
+/// için zaten üstte bölüm çubuğu var.
+///
+/// Ritim `Odak` ile veriliyor: fotoğrafı olan her beşinci haber, görseli
+/// üstte başlığı altta olan daha büyük bir blok olarak çıkıyor. Bu,
+/// sırayı bozmadan sayfaya nefes aldırıyor.
+///
+/// Tembel kuruluyor (`SliverList.builder`): akış tek bir `Column` içinde
+/// toplanırsa 200 haberin tamamı açılışta inşa ediliyor ve kaydırma
+/// takılıyor.
 class _Akis extends StatelessWidget {
   const _Akis({required this.liste});
   final List<Haber> liste;
 
+  /// Kaçıncı haberde bir `Odak` denenecek.
+  static const _odakAraligi = 5;
+
+  static bool _fotografli(Haber h) => KartBasi.gercekFotograf(h);
+
   @override
   Widget build(BuildContext context) {
     final genis = MediaQuery.sizeOf(context).width >= 860;
-    final manset = liste.first;
-    final kalan = liste.skip(1).toList();
+    return genis ? _genis() : _dar();
+  }
 
-    return SliverToBoxAdapter(
-      child: Center(
+  static Widget _ortala(Widget cocuk) => Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1080),
-          child: genis
-              ? _genisDuzen(manset, kalan)
-              : _darDuzen(manset, kalan),
+          child: cocuk,
         ),
-      ),
-    );
-  }
+      );
 
   /// Telefon: manşet, sonra kesintisiz satır listesi.
-  Widget _darDuzen(Haber manset, List<Haber> kalan) {
-    return Column(
-      children: [
-        Manset(haber: manset),
-        ...kalan.map((h) => Satir(haber: h)),
-      ],
+  Widget _dar() {
+    return SliverList.builder(
+      itemCount: liste.length,
+      itemBuilder: (c, i) {
+        if (i == 0) return _ortala(Manset(haber: liste[0]));
+        final h = liste[i];
+        final odak = i % _odakAraligi == 0 && _fotografli(h);
+        return _ortala(odak ? Odak(haber: h) : Satir(haber: h));
+      },
     );
   }
 
-  /// Masaüstü: manşet solda, en yeniler sağda; gerisi iki sütun.
+  /// Masaüstü: manşet solda, en yeniler sağ sütunda; gerisi iki sütun.
   ///
   /// Geniş ekranda manşeti tek başına tam genişliğe yaymak sayfayı
   /// boşaltıyor — gözün ilk gördüğü yerde tek haber kalıyor. Yan sütun
   /// aynı alanda beş başlık daha veriyor.
-  Widget _genisDuzen(Haber manset, List<Haber> kalan) {
-    final yan = kalan.take(5).toList();
-    final alt = kalan.skip(5).toList();
-    return Padding(
-      padding: const EdgeInsets.only(top: 4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
+  Widget _genis() {
+    final yan = liste.skip(1).take(5).toList();
+    final alt = liste.skip(6).toList();
+    // İki sütun: çiftler hâlinde, sıra soldan sağa korunuyor.
+    final ciftSayisi = (alt.length + 1) ~/ 2;
+
+    return SliverList.builder(
+      itemCount: 1 + ciftSayisi,
+      itemBuilder: (c, i) {
+        if (i == 0) return _ortala(_UstBlok(manset: liste.first, yan: yan));
+        final sol = alt[(i - 1) * 2];
+        final sag = (i - 1) * 2 + 1 < alt.length ? alt[(i - 1) * 2 + 1] : null;
+        return _ortala(
           IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Expanded(flex: 62, child: Manset(haber: manset, genis: true)),
+                Expanded(child: Satir(haber: sol)),
                 Container(width: 1, color: Tema.cizgi),
                 Expanded(
-                  flex: 38,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: yan.map((h) => Satir(haber: h)).toList(),
-                  ),
+                  child: sag == null
+                      ? const SizedBox.shrink()
+                      : Satir(haber: sag),
                 ),
               ],
             ),
           ),
-          if (alt.isNotEmpty) ...[
-            const _BolumBasligi('Diğer haberler'),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      for (var i = 0; i < alt.length; i += 2)
-                        Satir(haber: alt[i]),
-                    ],
-                  ),
-                ),
-                Container(width: 1, color: Tema.cizgi),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      for (var i = 1; i < alt.length; i += 2)
-                        Satir(haber: alt[i]),
-                    ],
-                  ),
-                ),
-              ],
+        );
+      },
+    );
+  }
+}
+
+/// Masaüstünün üst bloğu: manşet ve yanındaki en yeniler.
+class _UstBlok extends StatelessWidget {
+  const _UstBlok({required this.manset, required this.yan});
+
+  final Haber manset;
+  final List<Haber> yan;
+
+  @override
+  Widget build(BuildContext context) {
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(flex: 62, child: Manset(haber: manset, genis: true)),
+          Container(width: 1, color: Tema.cizgi),
+          Expanded(
+            flex: 38,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: yan.map((h) => Satir(haber: h)).toList(),
             ),
-          ],
+          ),
         ],
       ),
     );
   }
 }
+
+
 
 /// Manşet.
 ///
@@ -427,15 +485,16 @@ class Manset extends StatelessWidget {
     return Material(
       color: Colors.white,
       child: InkWell(
-        onTap: () => context.go('/haber/${haber.slug}'),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          context.go('/haber/${haber.slug}');
+        },
         child: Container(
-          decoration: const BoxDecoration(
-            border: Border(bottom: BorderSide(color: Tema.cizgi)),
-          ),
+          padding: const EdgeInsets.only(bottom: 24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              KartBasi(haber: haber, yukseklik: genis ? 300 : 190),
+              KartBasi(haber: haber, yukseklik: genis ? 350 : 250),
               Padding(
                 padding: EdgeInsets.fromLTRB(18, 13, 18, genis ? 20 : 16),
                 child: Column(
@@ -448,7 +507,7 @@ class Manset extends StatelessWidget {
                       style: TextStyle(
                         fontFamily: Tema.serif,
                         fontWeight: FontWeight.w700,
-                        fontSize: genis ? 32 : 23,
+                        fontSize: genis ? 36 : 26,
                         height: 1.16,
                         letterSpacing: -0.5,
                         color: Tema.murekkep,
@@ -479,11 +538,59 @@ class Manset extends StatelessWidget {
   }
 }
 
+/// Odak satırı — Manşetten küçük, Satırdan büyük, görsel üstte başlık altta.
+/// Fihrist görünümüne ritim katmak için kullanılır.
+class Odak extends StatelessWidget {
+  const Odak({super.key, required this.haber});
+  final Haber haber;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.white,
+      child: InkWell(
+        onTap: () {
+          HapticFeedback.lightImpact();
+          context.go('/haber/${haber.slug}');
+        },
+        child: Container(
+          padding: const EdgeInsets.only(bottom: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              KartBasi(haber: haber, yukseklik: 180),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(18, 12, 18, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Etiketler(haber: haber),
+                    const SizedBox(height: 6),
+                    Text(
+                      haber.baslik,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontFamily: Tema.serif,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 21,
+                        height: 1.18,
+                        letterSpacing: -0.3,
+                        color: Tema.murekkep,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// Akış satırı — küçük görsel solda, başlık sağda, özet yok.
-///
-/// Önceki kart 332 piksel yer kaplıyordu; bu satır 93. Aynı ekrana üç
-/// kat haber sığıyor. Özet kaldırıldı çünkü akışta okurun işi bakıp
-/// seçmek, okumak değil.
 class Satir extends StatelessWidget {
   const Satir({super.key, required this.haber});
   final Haber haber;
@@ -493,27 +600,30 @@ class Satir extends StatelessWidget {
     return Material(
       color: Colors.white,
       child: InkWell(
-        onTap: () => context.go('/haber/${haber.slug}'),
+        onTap: () {
+          HapticFeedback.lightImpact();
+          context.go('/haber/${haber.slug}');
+        },
         child: Container(
-          decoration: const BoxDecoration(
-            border: Border(bottom: BorderSide(color: Tema.cizgi)),
-          ),
-          padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
+          // Çizgi kaldırıldı, boşluk eklendi
+          padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(
-                width: 68,
-                height: 68,
-                child: KartBasi(haber: haber, yukseklik: 68, kucuk: true),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: SizedBox(
+                  width: 104,
+                  height: 76,
+                  child: KartBasi(haber: haber, yukseklik: 76, kucuk: true),
+                ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 14),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Etiketler(haber: haber, kucuk: true),
-                    const SizedBox(height: 4),
+                    // Etiketler kaldırıldı, sadece başlık
                     Text(
                       haber.baslik,
                       maxLines: 3,
@@ -521,7 +631,7 @@ class Satir extends StatelessWidget {
                       style: const TextStyle(
                         fontFamily: Tema.serif,
                         fontWeight: FontWeight.w600,
-                        fontSize: 15.5,
+                        fontSize: 16.5,
                         height: 1.27,
                         letterSpacing: -0.1,
                         color: Tema.murekkep,
@@ -537,6 +647,7 @@ class Satir extends StatelessWidget {
     );
   }
 }
+
 
 /// Kart başı görseli.
 ///
@@ -558,69 +669,96 @@ class KartBasi extends StatelessWidget {
   final double yukseklik;
   final bool kucuk;
 
+  /// Haberde gösterilebilir GERÇEK bir fotoğraf var mı.
+  ///
+  /// Ayrı ve adlandırılmış: bu kural bir kez sessizce bozuldu
+  /// (yalnızca `gorselUrl`e bakılmaya başlandı) ve tipografik kartlar
+  /// akışa sızdı. Testi `test/kart_basi_test.dart` içinde.
+  static bool gercekFotograf(Haber h) =>
+      (h.gorselKaynak ?? '').isNotEmpty && (h.gorselUrl ?? '').isNotEmpty;
+
   @override
   Widget build(BuildContext context) {
-    final foto =
-        (haber.gorselKaynak ?? '').isNotEmpty &&
-        (haber.gorselUrl ?? '').isNotEmpty;
-    if (!foto) {
-      return KategoriBandi(haber: haber, yukseklik: yukseklik, kucuk: kucuk);
-    }
+    // İKİ koşul birden aranıyor: adres VE atıf.
+    //
+    // `gorsel_url` tek başına yetmez — fotoğrafı olmayan haberlerde o alan
+    // bizim ürettiğimiz **tipografik kartın** adresini taşıyor ve o kartın
+    // üstünde haberin başlığı yazılı. Akışta gösterilirse başlık hemen
+    // altında bir kez daha çıkıyor; denendi, aynı cümle iki kez okunuyor.
+    // Kartın yeri paylaşım önizlemesi (og:image), akış değil.
+    //
+    // `gorsel_kaynak` yalnızca kaynağın GERÇEK fotoğrafı kullanıldığında
+    // doluyor, yani ayrımı tam olarak o alan taşıyor.
+    final foto = gercekFotograf(haber);
+
+    final bant = KategoriBandi(
+      haber: haber,
+      yukseklik: yukseklik,
+      kucuk: kucuk,
+    );
+    if (!foto) return bant;
+
     // Yükseklik SABİT, oran DEĞİL.
     //
     // Önce `AspectRatio` kullanılmıştı: 1200/630 oranı geniş bir kartta
     // 394 piksele çıkıyor, manşet dev bir görsele dönüşüyordu.
-    return Stack(
-      children: [
-        SizedBox(
-          height: yukseklik,
-          width: double.infinity,
-          child: Image.network(
-            haber.gorselUrl!,
-            fit: BoxFit.cover,
-            // `loadingBuilder` DEĞİL, `frameBuilder`.
-            //
-            // Ölçüldü: CanvasKit'te `loadingProgress` yükleme boyunca null
-            // kalıyor, dolayısıyla loadingBuilder'daki yer tutucu hiç
-            // görünmüyordu. İlk açılışta manşetin yerinde 190 piksellik
-            // bembeyaz bir boşluk duruyor, fotoğraf gelince aniden
-            // doluyordu. `frameBuilder` ilk kare boyanana kadar
-            // çalıştığı için o boşluğu gerçekten kapatıyor.
-            //
-            // Yer tutucu düz gri değil kategori bandı: renk zaten haberin
-            // bölümünü söylüyor, yani bekleme anı da bilgi taşıyor.
-            frameBuilder: (c, cocuk, kare, esGirdi) {
-              if (kare != null) return cocuk;
-              return KategoriBandi(
-                haber: haber,
-                yukseklik: yukseklik,
-                kucuk: kucuk,
-              );
-            },
-            errorBuilder: (c, e, s) =>
-                KategoriBandi(haber: haber, yukseklik: yukseklik, kucuk: kucuk),
-          ),
-        ),
-        // Atıf yalnızca büyük görselde; 68 pikselik küçük görselde okunmuyor
-        // ve üstünü kaplıyor. Küçük satırda kaynak, haber sayfasında yazılı.
-        if (!kucuk)
-          Positioned(
-            left: 0,
-            bottom: 0,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              color: Colors.black.withValues(alpha: .62),
-              child: Text(
-                'Fotoğraf: ${haber.gorselKaynak}',
-                style: const TextStyle(
-                  fontFamily: Tema.sans,
-                  fontSize: 10.5,
-                  color: Colors.white,
-                ),
+    return SizedBox(
+      height: yukseklik,
+      width: double.infinity,
+      child: Image.network(
+        haber.gorselUrl!,
+        fit: BoxFit.cover,
+        // `loadingBuilder` DEĞİL, `frameBuilder`.
+        //
+        // Ölçüldü: CanvasKit'te `loadingProgress` yükleme boyunca null
+        // kalıyor, dolayısıyla loadingBuilder'daki yer tutucu hiç
+        // görünmüyordu. İlk açılışta manşetin yerinde 190 piksellik
+        // bembeyaz bir boşluk duruyor, fotoğraf gelince aniden doluyordu.
+        //
+        // Yer tutucu düz gri değil kategori bandı: renk zaten haberin
+        // bölümünü söylüyor, yani bekleme anı da bilgi taşıyor.
+        frameBuilder: (c, cocuk, kare, esGirdi) {
+          // Künye ancak fotoğraf BOYANDIĞINDA basılıyor.
+          //
+          // Önceki kurguda künye `Stack`in dışında duruyordu ve fotoğraf
+          // yüklenemediğinde kategori bandının üstünde "Fotoğraf: X"
+          // yazısı kalıyordu — ekranda görüldü. Olmayan bir fotoğrafa
+          // kaynak göstermek, haber sitesinde yanlış bilgidir.
+          if (kare == null && !esGirdi) return bant;
+          return Stack(
+            fit: StackFit.expand,
+            children: [
+              AnimatedOpacity(
+                opacity: 1.0,
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOut,
+                child: cocuk,
               ),
-            ),
-          ),
-      ],
+              // 68 pikselik küçük görselde künye okunmuyor ve üstünü
+              // kaplıyor; orada kaynak haber sayfasında yazılı.
+              if (!kucuk)
+                Positioned(
+                  left: 0,
+                  bottom: 0,
+                  child: Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    color: Colors.black.withValues(alpha: .62),
+                    child: Text(
+                      'Fotoğraf: ${haber.gorselKaynak}',
+                      style: const TextStyle(
+                        fontFamily: Tema.sans,
+                        fontSize: 10.5,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          );
+        },
+        errorBuilder: (c, e, s) => bant,
+      ),
     );
   }
 }
@@ -719,28 +857,6 @@ class _BantCizer extends CustomPainter {
   bool shouldRepaint(_BantCizer eski) => eski.renk != renk;
 }
 
-class _BolumBasligi extends StatelessWidget {
-  const _BolumBasligi(this.metin);
-  final String metin;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: Tema.sunk,
-      padding: const EdgeInsets.fromLTRB(18, 11, 18, 11),
-      child: Text(
-        buyult(metin),
-        style: const TextStyle(
-          fontFamily: Tema.sans,
-          fontSize: 11.5,
-          fontWeight: FontWeight.w700,
-          letterSpacing: 1.3,
-          color: Tema.solgun,
-        ),
-      ),
-    );
-  }
-}
 
 /// Bölüm · ilçe · zaman.
 ///
@@ -910,3 +1026,65 @@ class Alt extends StatelessWidget {
     );
   }
 }
+
+
+class Iskelet extends StatelessWidget {
+  const Iskelet({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Container(height: 250, color: Tema.cizgi.withValues(alpha: 0.5)),
+        Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(width: 80, height: 16, color: Tema.cizgi.withValues(alpha: 0.5)),
+              const SizedBox(height: 12),
+              Container(width: double.infinity, height: 26, color: Tema.cizgi.withValues(alpha: 0.5)),
+              const SizedBox(height: 8),
+              Container(width: 200, height: 26, color: Tema.cizgi.withValues(alpha: 0.5)),
+            ],
+          ),
+        ),
+        const Divider(height: 1, color: Tema.cizgi),
+        _IskeletSatir(),
+        _IskeletSatir(),
+        _IskeletSatir(),
+      ],
+    );
+  }
+}
+
+class _IskeletSatir extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Tema.cizgi))),
+      padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(width: 68, height: 68, color: Tema.cizgi.withValues(alpha: 0.5)),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(width: 60, height: 14, color: Tema.cizgi.withValues(alpha: 0.5)),
+                const SizedBox(height: 8),
+                Container(width: double.infinity, height: 16, color: Tema.cizgi.withValues(alpha: 0.5)),
+                const SizedBox(height: 6),
+                Container(width: 150, height: 16, color: Tema.cizgi.withValues(alpha: 0.5)),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
