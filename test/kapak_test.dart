@@ -173,11 +173,15 @@ void main() {
       // başlığın dördü de asayiş oluyordu.
       final liste = [
         _h(onem: 8, kategori: 'Asayiş', id: 'a1'),
-        _h(onem: 7, kategori: 'Asayiş', id: 'a2'),
-        _h(onem: 7, kategori: 'Kaza ve Acil', id: 'a3'),
-        _h(onem: 6, kategori: 'Kaza ve Acil', id: 'a4'),
+        _h(onem: 8, kategori: 'Asayiş', id: 'a2'),
+        _h(onem: 8, kategori: 'Kaza ve Acil', id: 'a3'),
+        _h(onem: 8, kategori: 'Kaza ve Acil', id: 'a4'),
+        _h(onem: 7, kategori: 'Asayiş', id: 'a5'),
+        _h(onem: 7, kategori: 'Kaza ve Acil', id: 'a6'),
         _h(onem: 5, kategori: 'Spor', id: 's1'),
-        _h(onem: 4, kategori: 'Tarım', id: 't1'),
+        _h(onem: 5, kategori: 'Tarım', id: 't1'),
+        _h(onem: 4, kategori: 'Gündem', id: 'g1'),
+        _h(onem: 4, kategori: 'Eğitim', id: 'e1'),
       ];
       final k = Kapak.kur(liste, simdi: _simdi);
       final ust = [k.manset!, ...k.ikincil];
@@ -194,12 +198,12 @@ void main() {
     test('yalnızca tek bölüm varsa üst blok yine de doluyor', () {
       // Çeşitlilik kuralı boş bir manşet bloğuna yol açmamalı.
       final liste = [
-        for (var i = 0; i < 6; i++)
-          _h(onem: 8 - i, yas: Duration(hours: i), kategori: 'Asayiş'),
+        for (var i = 0; i < 8; i++)
+          _h(onem: 8 - (i % 5), yas: Duration(hours: i), kategori: 'Asayiş'),
       ];
       final k = Kapak.kur(liste, simdi: _simdi);
       expect(k.manset, isNotNull);
-      expect(k.ikincil, hasLength(3));
+      expect(k.ikincil, hasLength(5));
     });
 
     test('ilçe seçilmemişse ilçem katı boş', () {
