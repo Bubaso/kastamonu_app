@@ -80,7 +80,12 @@ class Kapak {
   //
   // Bilerek dar. Portal ölçeğinde yayındaki toplam birkaç yüz haber;
   // katları genişletmek sayfayı yine tek bir uzun listeye çevirirdi.
-  static const _ikincilAdedi = 3;
+  /// Manşetin yanındaki başlık sayısı.
+  ///
+  /// Beş, çünkü geniş ekranda yan sütun manşetin yüksekliğini doldurmak
+  /// zorunda: üçle denendi ve sütunun altında manşet kadar boş beyaz
+  /// kalıyordu. Telefonda ilk ikisi yan yana kart, gerisi satır.
+  static const _ikincilAdedi = 5;
   static const _kisaKisaAdedi = 5;
   static const _ilcemAdedi = 3;
   static const _gundemAdedi = 3;
