@@ -229,6 +229,79 @@ void main() {
       }
     });
 
+    test('belirgin şekilde bilgilendirici başlık gövdeyi geçiyor', () {
+      // Ölçülen gerçek durum: iki kaydın da fotoğrafı var, gövde kısa
+      // olanın başlığı daha bilgilendirici. Akışta okurun gördüğü şey
+      // başlık olduğu için o kayıt kalmalı.
+      final zenginBaslik = _h(
+        baslik: "Daday'ın Bolatlar köyünde çıkan yangında Yaşar Mıcık'a ait "
+            'samanlık kullanılamaz hale geldi',
+        kategori: 'Kaza ve Acil',
+        ilceler: const ['daday'],
+        govde: 'a' * 532,
+        foto: true,
+        id: 'zengin-baslik',
+      );
+      final uzunGovde = _h(
+        baslik: "Daday'ın Bolatlar köyünde çıkan yangında samanlık "
+            'kullanılamaz hale geldi',
+        kategori: 'Kaza ve Acil',
+        ilceler: const ['daday'],
+        govde: 'a' * 571,
+        foto: true,
+        id: 'uzun-govde',
+      );
+
+      for (final liste in [
+        [zenginBaslik, uzunGovde],
+        [uzunGovde, zenginBaslik],
+      ]) {
+        expect(tekille(liste).single.id, 'zengin-baslik');
+      }
+    });
+
+    test('küçük başlık farkı gövde kararını devirmiyor', () {
+      // Tek karakterlik bir fark üç yüz karakterlik gövde farkını
+      // devirmemeli; başlık uzunluğu gürültülü bir ölçüt.
+      final kilBaslik = _h(
+        baslik: 'Merkezde trafik kazası meydana geldii',
+        kategori: 'Kaza ve Acil',
+        ilceler: const ['merkez'],
+        govde: 'a' * 100,
+        id: 'kil-baslik',
+      );
+      final uzunGovde = _h(
+        baslik: 'Merkezde trafik kazası meydana geldi',
+        kategori: 'Kaza ve Acil',
+        ilceler: const ['merkez'],
+        govde: 'a' * 400,
+        id: 'uzun-govde-2',
+      );
+      expect(tekille([kilBaslik, uzunGovde]).single.id, 'uzun-govde-2');
+    });
+
+    test('fotoğraf her iki ölçütün de önünde', () {
+      // Başlıklar aynı olay sayılacak kadar benzer; fark fotoğrafta.
+      final fotografli = _h(
+        baslik: 'Merkezde çıkan yangın söndürüldü',
+        kategori: 'Kaza ve Acil',
+        ilceler: const ['merkez'],
+        govde: 'a' * 50,
+        foto: true,
+        id: 'fotografli',
+      );
+      final fotografsiz = _h(
+        baslik: 'Merkezde çıkan yangın itfaiye ekiplerince söndürüldü',
+        kategori: 'Kaza ve Acil',
+        ilceler: const ['merkez'],
+        govde: 'a' * 900,
+        id: 'fotografsiz',
+      );
+      expect(ayniOlay(fotografli, fotografsiz), isTrue,
+          reason: 'önce aynı olay sayılmalı ki üstünlük kuralı sınansın');
+      expect(tekille([fotografli, fotografsiz]).single.id, 'fotografli');
+    });
+
     test('ayrı haberlerin ikisi de kalıyor', () {
       final sonuc = tekille([_gazilerMerkez(), _gazilerIlceler()]);
       expect(sonuc, hasLength(2));
