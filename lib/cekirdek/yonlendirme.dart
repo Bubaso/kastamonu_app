@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../ozellikler/anasayfa/ekran/anasayfa_ekrani.dart';
@@ -11,6 +11,7 @@ import '../ozellikler/inceleme/ekran/giris_ekrani.dart';
 import '../ozellikler/inceleme/ekran/inceleme_ekrani.dart';
 import '../ozellikler/kaydedilen/ekran/kaydedilen_ekrani.dart';
 import 'kabuk.dart';
+import 'tema.dart';
 import 'supabase.dart';
 
 /// Oturum değişimini yönlendiriciye duyuran köprü.
@@ -92,7 +93,22 @@ final yonlendirici = GoRouter(
       path: '/ara',
       builder: (c, s) => AramaEkrani(baslangic: s.uri.queryParameters['q']),
     ),
-    GoRoute(path: '/giris', builder: (c, s) => const GirisEkrani()),
-    GoRoute(path: '/panel', builder: (c, s) => const IncelemeEkrani()),
+    // Panel HER ZAMAN açık temada.
+    //
+    // Koyu tema okur tarafı için yapıldı: yerel haber akşam okunuyor.
+    // İnceleme masası ise bir iç araç ve kendi sabit renkleriyle çalışıyor
+    // (güven skoru yeşili, önem turuncusu, uyarı kremi) — bunlar koyu
+    // zeminde okunmuyor. Paneli okurun tema tercihine bağlamak, editörün
+    // işini onun gece ayarına teslim etmek olurdu.
+    GoRoute(
+      path: '/giris',
+      builder: (c, s) =>
+          Theme(data: Tema.olustur(), child: const GirisEkrani()),
+    ),
+    GoRoute(
+      path: '/panel',
+      builder: (c, s) =>
+          Theme(data: Tema.olustur(), child: const IncelemeEkrani()),
+    ),
   ],
 );

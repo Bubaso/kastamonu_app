@@ -32,11 +32,11 @@ Future<void> main() async {
   );
 }
 
-class KastamonuApp extends StatelessWidget {
+class KastamonuApp extends ConsumerWidget {
   const KastamonuApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (!SupabaseAyar.yapilandirildi) return const _AyarUyarisi();
     return MaterialApp.router(
       title: 'Kastamonu Haber',
@@ -49,6 +49,8 @@ class KastamonuApp extends StatelessWidget {
         GlobalCupertinoLocalizations.delegate,
       ],
       theme: Tema.olustur(),
+      darkTheme: Tema.olustur(r: Renkler.koyu, parlaklik: Brightness.dark),
+      themeMode: ref.watch(temaKipiSaglayici).kip,
       routerConfig: yonlendirici,
     );
   }

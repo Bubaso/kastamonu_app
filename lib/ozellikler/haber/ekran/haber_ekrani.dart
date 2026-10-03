@@ -79,6 +79,7 @@ class _Govde extends ConsumerStatefulWidget {
 class _GovdeState extends ConsumerState<_Govde> {
   @override
   Widget build(BuildContext context) {
+    final r = Renkler.of(context);
     final haber = widget.haber;
     // Okurun seçtiği punto. Gövde tam çarpanla, başlık daha yumuşak
     // büyüyor: başlık zaten büyük, aynı çarpanla üç satır daha uzuyor.
@@ -114,7 +115,7 @@ class _GovdeState extends ConsumerState<_Govde> {
                         fontSize: 31 * baslikCarpani,
                         height: 1.14,
                         letterSpacing: -0.6,
-                        color: Tema.murekkep,
+                        color: r.murekkep,
                       ),
                     ),
                     if ((haber.spot ?? '').isNotEmpty) ...[
@@ -127,7 +128,7 @@ class _GovdeState extends ConsumerState<_Govde> {
                           height: 1.5,
                           // Spot artık `solgun` değil: giriş paragrafı
                           // okunacak metin, künye değil.
-                          color: Tema.murekkepIkincil,
+                          color: r.murekkepIkincil,
                         ),
                       ),
                     ],
@@ -155,8 +156,8 @@ class _GovdeState extends ConsumerState<_Govde> {
                           // dolduruyor.
                           frameBuilder: (c, cocuk, kare, esGirdi) =>
                               kare == null
-                              ? const ColoredBox(
-                                  color: Tema.sunkKoyu,
+                              ? ColoredBox(
+                                  color: r.sunkKoyu,
                                   child: SizedBox.expand(),
                                 )
                               : cocuk,
@@ -166,10 +167,10 @@ class _GovdeState extends ConsumerState<_Govde> {
                       const SizedBox(height: 7),
                       Text(
                         'Fotoğraf: ${haber.gorselKaynak}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: Tema.sans,
                           fontSize: 12,
-                          color: Tema.solgun,
+                          color: r.solgun,
                         ),
                       ),
                       const SizedBox(height: 20),
@@ -193,7 +194,7 @@ class _GovdeState extends ConsumerState<_Govde> {
                             // 17,5 taban: 45 yaş okur için asgari.
                             fontSize: 17.5 * carpan,
                             height: 1.7,
-                            color: Tema.murekkep,
+                            color: r.murekkep,
                           ),
                         ),
                       ),
@@ -220,11 +221,12 @@ class _UstCubuk extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final r = Renkler.of(context);
     final kayitli = ref.watch(kaydedilenlerSaglayici).contains(haber.slug);
     return DecoratedBox(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Tema.murekkep, width: 2)),
+      decoration: BoxDecoration(
+        color: r.kart,
+        border: Border(bottom: BorderSide(color: r.murekkep, width: 2)),
       ),
       child: Center(
         child: ConstrainedBox(
@@ -237,13 +239,13 @@ class _UstCubuk extends ConsumerWidget {
                   onPressed: () =>
                       context.canPop() ? context.pop() : context.go('/'),
                   icon: const Icon(Icons.arrow_back, size: 22),
-                  color: Tema.murekkep,
+                  color: r.murekkep,
                   tooltip: 'Geri',
                 ),
                 Expanded(
                   child: InkWell(
                     onTap: () => context.go('/'),
-                    child: const Padding(
+                    child: Padding(
                       padding: EdgeInsets.symmetric(vertical: 8),
                       child: Text(
                         'Kastamonu Haber',
@@ -252,7 +254,7 @@ class _UstCubuk extends ConsumerWidget {
                           fontWeight: FontWeight.w700,
                           fontSize: 19,
                           letterSpacing: -0.4,
-                          color: Tema.murekkep,
+                          color: r.murekkep,
                         ),
                       ),
                     ),
@@ -267,7 +269,7 @@ class _UstCubuk extends ConsumerWidget {
                 IconButton(
                   onPressed: () => _paylas(context),
                   icon: const Icon(Icons.share_outlined, size: 20),
-                  color: Tema.solgun,
+                  color: r.solgun,
                   tooltip: 'Paylaş',
                 ),
                 // Kaydetme haberin kendi başlığında: okur "bunu sonra
@@ -278,7 +280,7 @@ class _UstCubuk extends ConsumerWidget {
                     kayitli ? Icons.bookmark : Icons.bookmark_outline,
                     size: 22,
                   ),
-                  color: kayitli ? Tema.bakir : Tema.solgun,
+                  color: kayitli ? r.bakir : r.solgun,
                   tooltip: kayitli ? 'Kayıttan çıkar' : 'Kaydet',
                 ),
               ],
@@ -306,12 +308,13 @@ class _UstCubuk extends ConsumerWidget {
       ).toString();
 
   Future<void> _paylas(BuildContext context) async {
+    final r = Renkler.of(context);
     final adres = _adres();
     final mesajci = ScaffoldMessenger.of(context);
 
     await showModalBottomSheet<void>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: r.kart,
       builder: (sayfa) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -323,18 +326,18 @@ class _UstCubuk extends ConsumerWidget {
                 haber.baslik,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: Tema.serif,
                   fontWeight: FontWeight.w600,
                   fontSize: 16,
                   height: 1.3,
-                  color: Tema.murekkep,
+                  color: r.murekkep,
                 ),
               ),
             ),
             const Divider(height: 18),
             ListTile(
-              leading: const Icon(Icons.chat_outlined, color: Tema.patina),
+              leading: Icon(Icons.chat_outlined, color: r.patina),
               title: const Text(
                 "WhatsApp'ta paylaş",
                 style: TextStyle(fontFamily: Tema.sans, fontSize: 15),
@@ -353,7 +356,7 @@ class _UstCubuk extends ConsumerWidget {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.link, color: Tema.patina),
+              leading: Icon(Icons.link, color: r.patina),
               title: const Text(
                 'Bağlantıyı kopyala',
                 style: TextStyle(fontFamily: Tema.sans, fontSize: 15),
@@ -362,10 +365,10 @@ class _UstCubuk extends ConsumerWidget {
                 adres,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: Tema.sans,
                   fontSize: 12,
-                  color: Tema.solgun,
+                  color: r.solgun,
                 ),
               ),
               onTap: () async {
@@ -389,6 +392,7 @@ class _UstCubuk extends ConsumerWidget {
   }
 
   Future<void> _kaydet(BuildContext context, WidgetRef ref) async {
+    final r = Renkler.of(context);
     final artikKayitli =
         await ref.read(kaydedilenlerSaglayici.notifier).degistir(haber.slug);
     if (!context.mounted) return;
@@ -405,7 +409,7 @@ class _UstCubuk extends ConsumerWidget {
           action: artikKayitli
               ? SnackBarAction(
                   label: 'Git',
-                  textColor: Tema.patinaZemin,
+                  textColor: r.patinaZemin,
                   onPressed: () => context.go('/kaydettiklerim'),
                 )
               : null,
@@ -424,17 +428,18 @@ class _PuntoSecici extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final r = Renkler.of(context);
     final secili = ref.watch(puntoSaglayici);
     return Row(
       children: [
-        const Icon(Icons.text_fields, size: 17, color: Tema.solgun),
+        Icon(Icons.text_fields, size: 17, color: r.solgun),
         const SizedBox(width: 9),
-        const Text(
+        Text(
           'Yazı boyutu',
           style: TextStyle(
             fontFamily: Tema.sans,
             fontSize: 13,
-            color: Tema.solgun,
+            color: r.solgun,
           ),
         ),
         const Spacer(),
@@ -443,7 +448,7 @@ class _PuntoSecici extends ConsumerWidget {
           return Padding(
             padding: const EdgeInsets.only(left: 6),
             child: Material(
-              color: etkin ? Tema.patina : Colors.white,
+              color: etkin ? r.patina : Colors.white,
               child: InkWell(
                 onTap: () => ref.read(puntoSaglayici.notifier).sec(p),
                 child: Container(
@@ -452,7 +457,7 @@ class _PuntoSecici extends ConsumerWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 11),
                   decoration: BoxDecoration(
                     border: Border.all(
-                      color: etkin ? Tema.patina : Tema.cizgiKuvvetli,
+                      color: etkin ? r.patina : r.cizgiKuvvetli,
                     ),
                   ),
                   child: Text(
@@ -462,7 +467,7 @@ class _PuntoSecici extends ConsumerWidget {
                       // Düğmenin kendisi ne yaptığını gösteriyor.
                       fontSize: 12 + p.index * 3.5,
                       fontWeight: FontWeight.w700,
-                      color: etkin ? Colors.white : Tema.murekkep,
+                      color: etkin ? r.patinaUstu : r.murekkep,
                     ),
                   ),
                 ),
@@ -481,6 +486,7 @@ class _Etiketler extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final r = Renkler.of(context);
     final ilce = haber.ilceler.where((b) => b.onaylandi).map((b) => b.ad);
     return Wrap(
       spacing: 10,
@@ -491,23 +497,23 @@ class _Etiketler extends StatelessWidget {
         if (haber.kategoriAd != null)
           Text(
             buyult(haber.kategoriAd!),
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: Tema.sans,
               fontSize: 11.5,
               fontWeight: FontWeight.w700,
               letterSpacing: 1.1,
-              color: Tema.patina,
+              color: r.patina,
             ),
           ),
         ...ilce.map(
           (ad) => Text(
             buyult(ad),
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: Tema.sans,
               fontSize: 11.5,
               fontWeight: FontWeight.w700,
               letterSpacing: 1.1,
-              color: Tema.bakir,
+              color: r.bakir,
             ),
           ),
         ),
@@ -540,6 +546,7 @@ class _Kunye extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final r = Renkler.of(context);
     final mutlak = DateFormat('d MMMM y, HH:mm', 'tr').format(haber.zaman);
     final yas = DateTime.now().difference(haber.zaman);
     final zaman = yas < _goreliSinir
@@ -551,20 +558,20 @@ class _Kunye extends StatelessWidget {
         children: [
           TextSpan(
             text: haber.kaynakKisa,
-            style: const TextStyle(
+            style: TextStyle(
               fontWeight: FontWeight.w600,
-              color: Tema.murekkepIkincil,
+              color: r.murekkepIkincil,
             ),
           ),
           const TextSpan(text: '  ·  '),
           TextSpan(text: zaman),
         ],
       ),
-      style: const TextStyle(
+      style: TextStyle(
         fontFamily: Tema.sans,
         fontSize: 12.5,
         height: 1.5,
-        color: Tema.solgun,
+        color: r.solgun,
       ),
     );
   }
@@ -581,24 +588,25 @@ class _KaynakKutusu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final r = Renkler.of(context);
     final t = Theme.of(context);
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Tema.cizgiKuvvetli),
+        color: r.kart,
+        border: Border.all(color: r.cizgiKuvvetli),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'KAYNAK',
             style: TextStyle(
               fontSize: 10.5,
               fontWeight: FontWeight.w700,
               letterSpacing: 1.1,
-              color: Tema.solgun,
+              color: r.solgun,
             ),
           ),
           const SizedBox(height: 7),
@@ -609,10 +617,10 @@ class _KaynakKutusu extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             'Bu haber kaynağındaki bilgilerden derlenmiştir. '
             'Tam metin için özgün habere gidebilirsiniz.',
-            style: TextStyle(fontSize: 12.5, color: Tema.solgun, height: 1.45),
+            style: TextStyle(fontSize: 12.5, color: r.solgun, height: 1.45),
           ),
           const SizedBox(height: 12),
           OutlinedButton.icon(
@@ -623,8 +631,8 @@ class _KaynakKutusu extends StatelessWidget {
             icon: const Icon(Icons.open_in_new, size: 16),
             label: const Text('Özgün habere git'),
             style: OutlinedButton.styleFrom(
-              foregroundColor: Tema.patina,
-              side: const BorderSide(color: Tema.patina),
+              foregroundColor: r.patina,
+              side: BorderSide(color: r.patina),
             ),
           ),
         ],
@@ -696,6 +704,7 @@ class _Ilgililer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final r = Renkler.of(context);
     final t = Theme.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -704,11 +713,11 @@ class _Ilgililer extends StatelessWidget {
           children: [
             Text(
               baslik,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 11.5,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.2,
-                color: Tema.solgun,
+                color: r.solgun,
               ),
             ),
             const SizedBox(width: 12),
@@ -730,11 +739,11 @@ class _Ilgililer extends StatelessWidget {
                       if (h.kategoriAd != null)
                         Text(
                           buyult(h.kategoriAd!),
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 10,
                             fontWeight: FontWeight.w700,
                             letterSpacing: .8,
-                            color: Tema.patina,
+                            color: r.patina,
                           ),
                         ),
                       ...h.ilceler
@@ -742,9 +751,9 @@ class _Ilgililer extends StatelessWidget {
                           .map(
                             (b) => Text(
                               b.ad,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 10.5,
-                                color: Tema.solgun,
+                                color: r.solgun,
                               ),
                             ),
                           ),
@@ -771,18 +780,19 @@ class _Uyari extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final r = Renkler.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.article_outlined, size: 42, color: Tema.solgun),
+            Icon(Icons.article_outlined, size: 42, color: r.solgun),
             const SizedBox(height: 14),
             Text(
               metin,
               textAlign: TextAlign.center,
-              style: const TextStyle(color: Tema.solgun),
+              style: TextStyle(color: r.solgun),
             ),
             const SizedBox(height: 18),
             FilledButton(

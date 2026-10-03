@@ -69,6 +69,7 @@ class _HatPaneliState extends ConsumerState<HatPaneli> {
 
   @override
   Widget build(BuildContext context) {
+    final r = Renkler.of(context);
     final gecmis = ref.watch(gorevGecmisiSaglayici);
     final liste = gecmis.value ?? const <Gorev>[];
     final son = liste.isEmpty ? null : liste.first;
@@ -87,9 +88,9 @@ class _HatPaneliState extends ConsumerState<HatPaneli> {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: r.kart,
         border: Border(
-          bottom: BorderSide(color: Tema.cizgi.withValues(alpha: .8)),
+          bottom: BorderSide(color: r.cizgi.withValues(alpha: .8)),
         ),
       ),
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
@@ -101,7 +102,7 @@ class _HatPaneliState extends ConsumerState<HatPaneli> {
               Icon(
                 surmekte ? Icons.sync : Icons.download_outlined,
                 size: 18,
-                color: Tema.patina,
+                color: r.patina,
               ),
               const SizedBox(width: 8),
               const Text(
@@ -142,12 +143,12 @@ class _HatPaneliState extends ConsumerState<HatPaneli> {
                     Icon(
                       _gecmisAcik ? Icons.expand_less : Icons.expand_more,
                       size: 16,
-                      color: Tema.solgun,
+                      color: r.solgun,
                     ),
                     const SizedBox(width: 4),
                     Text(
                       'Son koşular (${liste.length})',
-                      style: const TextStyle(fontSize: 12, color: Tema.solgun),
+                      style: TextStyle(fontSize: 12, color: r.solgun),
                     ),
                   ],
                 ),
@@ -178,11 +179,12 @@ class _HatPaneliState extends ConsumerState<HatPaneli> {
   }
 
   Widget _durumRozeti(Gorev g) {
+    final r = Renkler.of(context);
     final renk = switch (g.durum) {
-      'calisiyor' => Tema.patina,
+      'calisiyor' => r.patina,
       'bekliyor' => const Color(0xFFA06000),
-      'hata' => Tema.bakir,
-      _ => Tema.solgun,
+      'hata' => r.bakir,
+      _ => r.solgun,
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
@@ -203,6 +205,7 @@ class _HatPaneliState extends ConsumerState<HatPaneli> {
   }
 
   Widget _sonucSatiri(Gorev g) {
+    final r = Renkler.of(context);
     final zaman = DateFormat('d MMM HH:mm', 'tr').format(g.istendi);
     final parcalar = <String>[
       zaman,
@@ -214,12 +217,13 @@ class _HatPaneliState extends ConsumerState<HatPaneli> {
       padding: const EdgeInsets.only(left: 26, top: 2),
       child: Text(
         parcalar.join('  ·  '),
-        style: const TextStyle(fontSize: 12, color: Tema.solgun),
+        style: TextStyle(fontSize: 12, color: r.solgun),
       ),
     );
   }
 
   Widget _gecmisListesi(List<Gorev> liste) {
+    final r = Renkler.of(context);
     return Container(
       margin: const EdgeInsets.only(top: 6),
       constraints: const BoxConstraints(maxHeight: 260),
@@ -236,7 +240,7 @@ class _HatPaneliState extends ConsumerState<HatPaneli> {
                     width: 92,
                     child: Text(
                       zaman,
-                      style: const TextStyle(fontSize: 12, color: Tema.solgun),
+                      style: TextStyle(fontSize: 12, color: r.solgun),
                     ),
                   ),
                   _durumRozeti(g),
@@ -252,7 +256,7 @@ class _HatPaneliState extends ConsumerState<HatPaneli> {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontSize: 12,
-                        color: g.durum == 'hata' ? Tema.bakir : Tema.murekkep,
+                        color: g.durum == 'hata' ? r.bakir : r.murekkep,
                       ),
                     ),
                   ),

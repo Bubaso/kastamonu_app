@@ -50,6 +50,7 @@ class _AramaEkraniState extends ConsumerState<AramaEkrani> {
 
   @override
   Widget build(BuildContext context) {
+    final r = Renkler.of(context);
     final sorgu = ref.watch(aramaSorgusuSaglayici);
     final sonuclar = ref.watch(aramaSonuclariSaglayici);
     final yeterliSorgu = aramaKelimeleri(sorgu).isNotEmpty;
@@ -87,10 +88,10 @@ class _AramaEkraniState extends ConsumerState<AramaEkrani> {
                     padding: const EdgeInsets.fromLTRB(18, 14, 18, 6),
                     child: Text(
                       '${sonuclar.length} haber',
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: Tema.sans,
                         fontSize: 12.5,
-                        color: Tema.solgun,
+                        color: r.solgun,
                       ),
                     ),
                   ),
@@ -122,10 +123,11 @@ class _Cubuk extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final r = Renkler.of(context);
     return DecoratedBox(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(bottom: BorderSide(color: Tema.murekkep, width: 2)),
+      decoration: BoxDecoration(
+        color: r.kart,
+        border: Border(bottom: BorderSide(color: r.murekkep, width: 2)),
       ),
       child: SafeArea(
         bottom: false,
@@ -140,7 +142,7 @@ class _Cubuk extends StatelessWidget {
                     onPressed: () =>
                         context.canPop() ? context.pop() : context.go('/'),
                     icon: const Icon(Icons.arrow_back, size: 22),
-                    color: Tema.murekkep,
+                    color: r.murekkep,
                     tooltip: 'Geri',
                   ),
                   Expanded(
@@ -149,18 +151,18 @@ class _Cubuk extends StatelessWidget {
                       autofocus: true,
                       onChanged: onYaz,
                       textInputAction: TextInputAction.search,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: Tema.serif,
                         // Arama kutusu da 17,5 tabanının altına inmiyor.
                         fontSize: 18,
-                        color: Tema.murekkep,
+                        color: r.murekkep,
                       ),
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: 'Haberlerde ara',
                         hintStyle: TextStyle(
                           fontFamily: Tema.serif,
                           fontSize: 18,
-                          color: Tema.solgun,
+                          color: r.solgun,
                         ),
                         border: InputBorder.none,
                         isDense: true,
@@ -174,7 +176,7 @@ class _Cubuk extends StatelessWidget {
                         onYaz('');
                       },
                       icon: const Icon(Icons.close, size: 20),
-                      color: Tema.solgun,
+                      color: r.solgun,
                       tooltip: 'Temizle',
                     ),
                 ],

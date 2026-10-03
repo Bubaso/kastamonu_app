@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -21,6 +22,7 @@ class Anahtar {
   static const ilcemAd = 'ilcem_ad';
   static const kaydedilenler = 'kaydedilenler';
   static const punto = 'punto';
+  static const temaKipi = 'tema_kipi';
 }
 
 /// `main()` içinde gerçek örnekle geçersiz kılınıyor.
@@ -137,3 +139,45 @@ class PuntoNotifier extends Notifier<Punto> {
 final puntoSaglayici = NotifierProvider<PuntoNotifier, Punto>(
   PuntoNotifier.new,
 );
+
+// ── Tema kipi ─────────────────────────────────────────────
+
+/// Okurun tema tercihi.
+///
+/// Varsayılan `sistem`: telefonun akşam karanlık moda geçmesi okurun zaten
+/// verdiği bir karar, portalın onu yok sayması için bir sebep yok.
+///
+/// Yerel haber akşam okunuyor; sıcak kâğıt zemini gece telefonda gözü
+/// yoruyor. Seçim cihazda duruyor, tıpkı punto gibi.
+enum TemaKipi {
+  sistem('Sistem'),
+  acik('Açık'),
+  koyu('Koyu');
+
+  const TemaKipi(this.ad);
+  final String ad;
+
+  ThemeMode get kip => switch (this) {
+        TemaKipi.sistem => ThemeMode.system,
+        TemaKipi.acik => ThemeMode.light,
+        TemaKipi.koyu => ThemeMode.dark,
+      };
+}
+
+class TemaKipiNotifier extends Notifier<TemaKipi> {
+  @override
+  TemaKipi build() {
+    final kayit = ref.watch(tercihlerSaglayici).getString(Anahtar.temaKipi);
+    // Bozuk kayıt uygulamayı düşürmüyor.
+    return TemaKipi.values.where((k) => k.name == kayit).firstOrNull ??
+        TemaKipi.sistem;
+  }
+
+  Future<void> sec(TemaKipi kipi) async {
+    await ref.read(tercihlerSaglayici).setString(Anahtar.temaKipi, kipi.name);
+    state = kipi;
+  }
+}
+
+final temaKipiSaglayici =
+    NotifierProvider<TemaKipiNotifier, TemaKipi>(TemaKipiNotifier.new);
