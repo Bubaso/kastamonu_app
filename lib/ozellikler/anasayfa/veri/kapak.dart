@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../cekirdek/bolum.dart';
 import '../../../cekirdek/tercihler.dart';
 import '../../inceleme/model/haber.dart';
 import 'anasayfa_deposu.dart';
@@ -93,16 +94,17 @@ class Kapak {
   static const _secmeAdedi = 3;
   static const _gozdenAdedi = 3;
 
-  /// Hangi kategori hangi kata ait.
-  static const _gundemBolumleri = {'Gündem', 'Kent ve Yönetim'};
-  static const _asayisBolumleri = {'Asayiş', 'Kaza ve Acil'};
-  static const _secmeBolumleri = {
-    'Kültür ve Turizm',
-    'Spor',
-    'Ekonomi',
-    'Tarım',
-    'Eğitim',
-    'Sağlık',
+  /// Hangi aile hangi kata ait.
+  ///
+  /// Gruplama `cekirdek/bolum.dart` içinde tek yerde duruyor: aynı liste
+  /// hem burada hem kategori renklerinde yazılıydı ve ikisi birbirinden
+  /// habersiz değişebiliyordu.
+  static const _gundemAilesi = BolumAilesi.gundem;
+  static const _asayisAilesi = BolumAilesi.asayis;
+  static const _secmeAileleri = {
+    BolumAilesi.uretim,
+    BolumAilesi.toplum,
+    BolumAilesi.yasam,
   };
 
   /// "Gözden kaçmasın" için en düşük yaş: bundan yenisi zaten yukarıda.
@@ -167,18 +169,18 @@ class Kapak {
     final ustAdaylar = tumu.toList()
       ..sort((a, b) => puanKarsilastir(a, b, simdi: o));
     final ustBlok = <Haber>[];
-    final aileSayisi = <String, int>{};
+    final aileSayisi = <BolumAilesi, int>{};
 
     void ustEkle(Haber h) {
       ustBlok.add(h);
-      final aile = _aile(h.kategoriAd);
+      final aile = Bolum.aile(h.kategoriAd);
       aileSayisi[aile] = (aileSayisi[aile] ?? 0) + 1;
       alinan.add(h.id);
     }
 
     for (final h in ustAdaylar) {
       if (ustBlok.length >= ustHedef) break;
-      if ((aileSayisi[_aile(h.kategoriAd)] ?? 0) >= _ustBlokAileSiniri) {
+      if ((aileSayisi[Bolum.aile(h.kategoriAd)] ?? 0) >= _ustBlokAileSiniri) {
         continue;
       }
       ustEkle(h);
@@ -204,17 +206,17 @@ class Kapak {
 
     final gundem = al(
       _gundemAdedi,
-      (h) => _gundemBolumleri.contains(h.kategoriAd),
+      (h) => Bolum.aile(h.kategoriAd) == _gundemAilesi,
     );
 
     final asayis = al(
       _asayisAdedi,
-      (h) => _asayisBolumleri.contains(h.kategoriAd),
+      (h) => Bolum.aile(h.kategoriAd) == _asayisAilesi,
     );
 
     final secme = al(
       _secmeAdedi,
-      (h) => _secmeBolumleri.contains(h.kategoriAd),
+      (h) => _secmeAileleri.contains(Bolum.aile(h.kategoriAd)),
     );
 
     // Gözden kaçmasın: birkaç günlük ama önemi yüksek olanlar. Önem sırası,
@@ -239,18 +241,6 @@ class Kapak {
       gozden: gozden,
       kalan: kalan,
     );
-  }
-
-  /// Bölüm ailesi — okur için aynı tonu taşıyan kategoriler.
-  ///
-  /// "Asayiş" ile "Kaza ve Acil" veritabanında iki kategori ama okurun
-  /// gözünde tek bir ton; üst bloktaki çeşitlilik sayılırken birlikte
-  /// sayılmaları gerekiyor.
-  static String _aile(String? kategoriAd) {
-    if (kategoriAd == null) return '—';
-    if (_asayisBolumleri.contains(kategoriAd)) return 'asayis';
-    if (_gundemBolumleri.contains(kategoriAd)) return 'gundem';
-    return kategoriAd;
   }
 
   /// Sayfada gösterilen hiçbir haber yoksa düzen çizilmiyor.
