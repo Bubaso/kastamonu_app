@@ -37,5 +37,13 @@ if ! grep -q 'SOCIAL_META_START' functions/shell.html; then
 fi
 echo "  ✓ kabuk hazır ($(wc -c < functions/shell.html) bayt)"
 
+echo "▸ Fonksiyon bağımlılıkları denetleniyor…"
+# `firebase deploy`, hangi fonksiyonların dışa açıldığını bulmak için
+# kaynağı YEREL bir Node sürecine yükletiyor. Bir bağımlılık yerelde
+# eksikse dağıtım o analiz adımında "Cannot find package" diye düşüyor;
+# Google tarafındaki kurulum kurtarmıyor, çünkü analiz ondan önce geliyor.
+# `sharp` eklendiğinde tam olarak bu oldu.
+npm install --prefix functions --no-audit --no-fund >/dev/null
+
 echo "▸ Dağıtılıyor…"
 firebase deploy --only hosting,functions
