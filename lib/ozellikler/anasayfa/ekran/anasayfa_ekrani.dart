@@ -189,6 +189,12 @@ class Kunye extends ConsumerWidget {
                   const Spacer(),
                   const GenisGezinti(),
                   IconButton(
+                    onPressed: () => context.go('/ara'),
+                    icon: const Icon(Icons.search, size: 20),
+                    color: Tema.solgun,
+                    tooltip: 'Ara',
+                  ),
+                  IconButton(
                     onPressed: () => context.go('/panel'),
                     icon: const Icon(Icons.dashboard_outlined, size: 18),
                     color: Tema.solgun,
@@ -196,9 +202,15 @@ class Kunye extends ConsumerWidget {
                   ),
                 ] else ...[
                   const Spacer(),
-                  Padding(
-                    padding: const EdgeInsets.only(right: 6),
-                    child: tarih,
+                  tarih,
+                  IconButton(
+                    onPressed: () => context.go('/ara'),
+                    icon: const Icon(Icons.search, size: 20),
+                    color: Tema.solgun,
+                    tooltip: 'Ara',
+                    visualDensity: VisualDensity.compact,
+                    padding: const EdgeInsets.only(left: 8),
+                    constraints: const BoxConstraints(minWidth: 36),
                   ),
                 ],
               ],

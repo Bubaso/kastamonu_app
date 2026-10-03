@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:go_router/go_router.dart';
 
 import '../ozellikler/anasayfa/ekran/anasayfa_ekrani.dart';
+import '../ozellikler/arama/ekran/arama_ekrani.dart';
 import '../ozellikler/haber/ekran/haber_ekrani.dart';
 import '../ozellikler/ilcem/ekran/ilcem_ekrani.dart';
 import '../ozellikler/inceleme/ekran/giris_ekrani.dart';
@@ -85,6 +86,11 @@ final yonlendirici = GoRouter(
     GoRoute(
       path: '/haber/:slug',
       builder: (c, s) => HaberEkrani(slug: s.pathParameters['slug']!),
+    ),
+    // Arama kabuğun DIŞINDA: klavye açıkken alt çubuk yer kaplamasın.
+    GoRoute(
+      path: '/ara',
+      builder: (c, s) => AramaEkrani(baslangic: s.uri.queryParameters['q']),
     ),
     GoRoute(path: '/giris', builder: (c, s) => const GirisEkrani()),
     GoRoute(path: '/panel', builder: (c, s) => const IncelemeEkrani()),

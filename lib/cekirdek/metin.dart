@@ -31,3 +31,32 @@ String kucult(String metin) => metin
     .replaceAll('I', 'ı')
     .replaceAll('İ', 'i')
     .toLowerCase();
+
+/// Arama için sadeleştirme: Türkçe küçültme, sonra aksan düşürme.
+///
+/// Neden gerekli
+/// ─────────────
+/// Okur telefonla "cocuk", "tasköprü", "ihsangazi" yazıyor; metinde ise
+/// "çocuk", "Taşköprü", "İhsangazi" geçiyor. Aksana birebir bakan bir
+/// arama bu okuru boş sonuçla karşılıyor ve aramanın bozuk olduğunu
+/// düşündürüyor.
+///
+/// Sıra önemli: önce Türkçe küçültme, sonra eşleme. Tersi yapılırsa
+/// "I" önce "i"ye düşüp ardından değişmeden kalıyor ve "Ilgaz" ile
+/// "ılgaz" ayrı şeylere dönüşüyor.
+String sadelestir(String metin) {
+  const esleme = {
+    'ç': 'c',
+    'ğ': 'g',
+    'ı': 'i',
+    'ö': 'o',
+    'ş': 's',
+    'ü': 'u',
+    'â': 'a',
+    'î': 'i',
+    'û': 'u',
+  };
+  var s = kucult(metin);
+  esleme.forEach((kaynak, hedef) => s = s.replaceAll(kaynak, hedef));
+  return s;
+}
