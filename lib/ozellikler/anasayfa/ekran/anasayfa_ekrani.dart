@@ -162,7 +162,9 @@ class Kunye extends ConsumerWidget {
               children: [
                 GestureDetector(
                   onTap: () => context.go('/'),
-                  child: Text(
+                  child: Semantics(
+                    header: true,
+                    child: Text(
                     baslik,
                     style: TextStyle(
                       fontFamily: Tema.serif,
@@ -172,6 +174,7 @@ class Kunye extends ConsumerWidget {
                       height: 1.05,
                       color: Tema.murekkep,
                     ),
+                  ),
                   ),
                 ),
                 if (genis) ...[
@@ -271,7 +274,16 @@ class _SonDakika extends ConsumerWidget {
     }
 
     return SliverToBoxAdapter(
-      child: Material(
+      // `liveRegion`: bant sayfa açıkken belirdiğinde ekran okuyucu onu
+      // kendiliğinden okuyor. Son dakika haberinin tek anlamı zaten
+      // sıradan akışı bölebilmesi; bölme yalnızca görenler için olmamalı.
+      child: Semantics(
+        liveRegion: true,
+        button: true,
+        label: 'Son dakika. ${h.baslik}',
+        excludeSemantics: true,
+        onTap: () => context.go('/haber/${h.slug}'),
+        child: Material(
         color: Tema.sonDakika,
         child: InkWell(
           onTap: () => context.go('/haber/${h.slug}'),
@@ -327,6 +339,7 @@ class _SonDakika extends ConsumerWidget {
             ),
           ),
         ),
+      ),
       ),
     );
   }
@@ -545,13 +558,20 @@ class Manset extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
+    void git() {
+      HapticFeedback.lightImpact();
+      context.go('/haber/${haber.slug}');
+    }
+
+    return Semantics(
+      button: true,
+      label: haberEtiketi(haber),
+      excludeSemantics: true,
+      onTap: git,
+      child: Material(
       color: Colors.white,
       child: InkWell(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          context.go('/haber/${haber.slug}');
-        },
+        onTap: git,
         child: Container(
           padding: const EdgeInsets.only(bottom: 24),
           child: Column(
@@ -601,6 +621,7 @@ class Manset extends StatelessWidget {
           ),
         ),
       ),
+      ),
     );
   }
 }
@@ -613,13 +634,20 @@ class Odak extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
+    void git() {
+      HapticFeedback.lightImpact();
+      context.go('/haber/${haber.slug}');
+    }
+
+    return Semantics(
+      button: true,
+      label: haberEtiketi(haber),
+      excludeSemantics: true,
+      onTap: git,
+      child: Material(
       color: Colors.white,
       child: InkWell(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          context.go('/haber/${haber.slug}');
-        },
+        onTap: git,
         child: Container(
           padding: const EdgeInsets.only(bottom: 24),
           child: Column(
@@ -671,6 +699,7 @@ class Odak extends StatelessWidget {
           ),
         ),
       ),
+      ),
     );
   }
 }
@@ -691,13 +720,20 @@ class Satir extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
+    void git() {
+      HapticFeedback.lightImpact();
+      context.go('/haber/${haber.slug}');
+    }
+
+    return Semantics(
+      button: true,
+      label: haberEtiketi(haber),
+      excludeSemantics: true,
+      onTap: git,
+      child: Material(
       color: zemin,
       child: InkWell(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          context.go('/haber/${haber.slug}');
-        },
+        onTap: git,
         child: Container(
           // Çizgi kaldırıldı, boşluk eklendi
           padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
@@ -743,6 +779,7 @@ class Satir extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }
@@ -814,6 +851,9 @@ class KartBasi extends StatelessWidget {
       child: Image.network(
         gorselAdresi(haber.gorselUrl, mantiksalGenislik: mantiksalGenislik)!,
         fit: BoxFit.cover,
+        // Kartın kendi etiketi başlığı, bölümü ve zamanı zaten söylüyor;
+        // görselin ayrıca "resim" diye duyurulması gürültü.
+        excludeFromSemantics: true,
         // `loadingBuilder` DEĞİL, `frameBuilder`.
         //
         // Ölçüldü: CanvasKit'te `loadingProgress` yükleme boyunca null
@@ -1051,6 +1091,31 @@ class Etiketler extends StatelessWidget {
       ],
     );
   }
+}
+
+/// Ekran okuyucunun haber kartı yerine okuyacağı tek cümle.
+///
+/// Neden gerekli
+/// ─────────────
+/// Flutter çizimi tuvale yapıyor, yani erişilebilirlik ağacı elle
+/// kurulmak zorunda — kurulmazsa sayfa ekran okuyucu için tamamen boş.
+/// Uzun süre tüm kod tabanında tek bir `Semantics` vardı.
+///
+/// Bu, temadaki punto ve kontrast kararlarının eksik yarısıydı: aynı
+/// gerekçeyle (Kastamonu'nun ortanca yaşı 43,3, 65 üstü oranı %21,1)
+/// gövde metni 17,5 pikselin altına indirilmiyor ama hiç göremeyen okur
+/// için sayfada okunacak hiçbir şey yoktu.
+///
+/// Sıra bilinçli: önce başlık. Ekran okuyucu kullanan okur listede
+/// gezerken ilk kelimelerden karar veriyor, bölüm ve zaman sonra geliyor.
+String haberEtiketi(Haber h) {
+  final ilce = h.ilceler.where((b) => b.onaylandi).map((b) => b.ad).join(', ');
+  return [
+    h.baslik,
+    if (h.kategoriAd != null) h.kategoriAd!,
+    if (ilce.isNotEmpty) ilce,
+    gecenSure(h.zaman),
+  ].join('. ');
 }
 
 /// "2 saat önce" / "dün 14:30" / "18 Eyl".
@@ -1513,13 +1578,20 @@ class _IkiliKart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
+    void git() {
+      HapticFeedback.lightImpact();
+      context.go('/haber/${haber.slug}');
+    }
+
+    return Semantics(
+      button: true,
+      label: haberEtiketi(haber),
+      excludeSemantics: true,
+      onTap: git,
+      child: Material(
       color: Colors.white,
       child: InkWell(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          context.go('/haber/${haber.slug}');
-        },
+        onTap: git,
         child: Padding(
           padding: const EdgeInsets.fromLTRB(14, 13, 14, 16),
           child: Column(
@@ -1553,6 +1625,7 @@ class _IkiliKart extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }
@@ -1761,13 +1834,20 @@ class _IzgaraKarti extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
+    void git() {
+      HapticFeedback.lightImpact();
+      context.go('/haber/${haber.slug}');
+    }
+
+    return Semantics(
+      button: true,
+      label: haberEtiketi(haber),
+      excludeSemantics: true,
+      onTap: git,
+      child: Material(
       color: Colors.white,
       child: InkWell(
-        onTap: () {
-          HapticFeedback.lightImpact();
-          context.go('/haber/${haber.slug}');
-        },
+        onTap: git,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1812,6 +1892,7 @@ class _IzgaraKarti extends StatelessWidget {
             const SizedBox(height: 16),
           ],
         ),
+      ),
       ),
     );
   }

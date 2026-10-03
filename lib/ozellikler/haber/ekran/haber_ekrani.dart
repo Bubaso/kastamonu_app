@@ -131,6 +131,8 @@ class _GovdeState extends ConsumerState<_Govde> {
                         ),
                       ),
                     ],
+                    const SizedBox(height: 15),
+                    _Kunye(haber: haber),
                     const SizedBox(height: 20),
                     // Gerçek kaynak fotoğrafı varsa gösteriliyor; atıf
                     // hemen altında. Tipografik karta düşüldüyse burada
@@ -509,18 +511,61 @@ class _Etiketler extends StatelessWidget {
             ),
           ),
         ),
-        // Haber sayfasında hem göreli hem mutlak zaman: tazelik bir
-        // bakışta, kayıt için tam tarih.
-        Text(
-          '${gecenSure(haber.zaman)}  ·  '
-          '${DateFormat("d MMMM y, HH:mm", 'tr').format(haber.zaman)}',
-          style: const TextStyle(
-            fontFamily: Tema.sans,
-            fontSize: 12,
-            color: Tema.solgun,
-          ),
-        ),
       ],
+    );
+  }
+}
+
+/// Haberin künyesi: kim derledi, ne zaman yayımlandı.
+///
+/// Başlığın ve spotun ALTINDA, gövdenin hemen üstünde — gazetede imza
+/// satırının durduğu yer. Önce başlığın üstünde, bölüm etiketlerinin
+/// yanındaydı ve orada iki sorun vardı.
+///
+/// Birincisi tekrar: satır "20 Eyl · 20 Eylül 2026, 04:27" diye
+/// yazıyordu. Göreli zaman yalnızca mutlak tarihin söylemediği bir şey
+/// söylediğinde işe yarıyor; bir haftayı geçmiş haberde `gecenSure` zaten
+/// tarihin kendisini döndürdüğü için aynı bilgi iki kez okunuyordu. Artık
+/// göreli biçim yalnızca bir haftadan yeni haberlerde çıkıyor.
+///
+/// İkincisi eksiklik: kaynak adı sayfanın en altındaki kutudaydı. Haberi
+/// derleyerek yayımlayan bir portalda kaynak künyenin parçasıdır, dipnot
+/// değil — okur neyi kimden okuduğunu gövdeye başlamadan bilmeli.
+class _Kunye extends StatelessWidget {
+  const _Kunye({required this.haber});
+  final Haber haber;
+
+  /// Göreli zamanın mutlak tarihe ekleyeceği bir şey var mı.
+  static const _goreliSinir = Duration(days: 7);
+
+  @override
+  Widget build(BuildContext context) {
+    final mutlak = DateFormat('d MMMM y, HH:mm', 'tr').format(haber.zaman);
+    final yas = DateTime.now().difference(haber.zaman);
+    final zaman = yas < _goreliSinir
+        ? '${gecenSure(haber.zaman)}  ·  $mutlak'
+        : mutlak;
+
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(
+            text: haber.kaynakKisa,
+            style: const TextStyle(
+              fontWeight: FontWeight.w600,
+              color: Tema.murekkepIkincil,
+            ),
+          ),
+          const TextSpan(text: '  ·  '),
+          TextSpan(text: zaman),
+        ],
+      ),
+      style: const TextStyle(
+        fontFamily: Tema.sans,
+        fontSize: 12.5,
+        height: 1.5,
+        color: Tema.solgun,
+      ),
     );
   }
 }
