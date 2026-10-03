@@ -14,9 +14,13 @@ if [ -z "$SUPABASE_ANON_KEY" ]; then
 fi
 
 echo "▸ Flutter web derleniyor…"
+# GORSEL_TABANI yalnızca dağıtımda veriliyor: boyutlandırma Hosting
+# yönlendirmesinin arkasındaki fonksiyon, yerelde öyle bir adres yok.
+# Verilmezse uygulama özgün dosyaya düşüyor (bkz. lib/cekirdek/gorsel.dart).
 flutter build web --release \
   --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" \
-  --dart-define=SUPABASE_URL="${SUPABASE_URL:-https://vcwgcvzqdnjyoitdfhma.supabase.co}"
+  --dart-define=SUPABASE_URL="${SUPABASE_URL:-https://vcwgcvzqdnjyoitdfhma.supabase.co}" \
+  --dart-define=GORSEL_TABANI=/gorsel
 
 echo "▸ Uygulama kabuğu yeniden adlandırılıyor (index.html → app.html)…"
 # Firebase Hosting statik dosyayı yönlendirmeden önce sunuyor; index.html

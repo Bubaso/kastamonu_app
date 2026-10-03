@@ -33,6 +33,13 @@
         }
       },
       {
+        "source": "/gorsel/**",
+        "function": {
+          "functionId": "gorsel",
+          "region": "europe-west1"
+        }
+      },
+      {
         "source": "/sitemap.xml",
         "function": {
           "functionId": "sitemap",

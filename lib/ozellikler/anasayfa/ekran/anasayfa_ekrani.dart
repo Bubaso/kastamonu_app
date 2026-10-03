@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../cekirdek/gorsel.dart';
 import '../../../cekirdek/kabuk.dart';
 import '../../../cekirdek/metin.dart';
 import '../../../cekirdek/tema.dart';
@@ -562,7 +563,11 @@ class Manset extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              KartBasi(haber: haber, yukseklik: genis ? 350 : 250),
+              KartBasi(
+                haber: haber,
+                yukseklik: genis ? 350 : 250,
+                mantiksalGenislik: genis ? 700 : 400,
+              ),
               Padding(
                 padding: EdgeInsets.fromLTRB(18, 13, 18, genis ? 20 : 16),
                 child: Column(
@@ -626,7 +631,8 @@ class Odak extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              KartBasi(haber: haber, yukseklik: 180),
+              // Odak geniş ekranda iki sütunlu düzende ~530 piksel.
+              KartBasi(haber: haber, yukseklik: 180, mantiksalGenislik: 540),
               Padding(
                 padding: const EdgeInsets.fromLTRB(18, 12, 18, 16),
                 child: Column(
@@ -706,7 +712,12 @@ class Satir extends StatelessWidget {
                 child: SizedBox(
                   width: 104,
                   height: 76,
-                  child: KartBasi(haber: haber, yukseklik: 76, kucuk: true),
+                  child: KartBasi(
+                    haber: haber,
+                    yukseklik: 76,
+                    kucuk: true,
+                    mantiksalGenislik: 104,
+                  ),
                 ),
               ),
               const SizedBox(width: 14),
@@ -755,11 +766,17 @@ class KartBasi extends StatelessWidget {
     required this.haber,
     this.yukseklik = 108,
     this.kucuk = false,
+    this.mantiksalGenislik = 400,
   });
 
   final Haber haber;
   final double yukseklik;
   final bool kucuk;
+
+  /// Kartın ekranda kaplayacağı genişlik. Boyutlandırma hizmetine hangi
+  /// kademenin isteneceğini bu belirliyor — yükseklik değil, çünkü dosyayı
+  /// küçülten şey genişlik.
+  final int mantiksalGenislik;
 
   /// Haberde gösterilebilir GERÇEK bir fotoğraf var mı.
   ///
@@ -798,7 +815,7 @@ class KartBasi extends StatelessWidget {
       height: yukseklik,
       width: double.infinity,
       child: Image.network(
-        haber.gorselUrl!,
+        gorselAdresi(haber.gorselUrl, mantiksalGenislik: mantiksalGenislik)!,
         fit: BoxFit.cover,
         // `loadingBuilder` DEĞİL, `frameBuilder`.
         //
