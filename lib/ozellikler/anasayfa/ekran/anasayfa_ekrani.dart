@@ -209,7 +209,7 @@ class _SonDakika extends ConsumerWidget {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
     final h = liste.first;
-    if (DateTime.now().difference(h.olusturuldu) > _esik) {
+    if (DateTime.now().difference(h.zaman) > _esik) {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
 
@@ -901,7 +901,7 @@ class Etiketler extends StatelessWidget {
           ),
         ),
         Text(
-          gecenSure(haber.olusturuldu),
+          gecenSure(haber.zaman),
           style: TextStyle(
             fontFamily: Tema.sans,
             fontSize: olcu + 0.5,
@@ -913,20 +913,44 @@ class Etiketler extends StatelessWidget {
   }
 }
 
-/// "2 saat önce" / "18 Eyl".
+/// "2 saat önce" / "dün 14:30" / "18 Eyl".
 ///
 /// Yerel haberde tazelik bilginin parçası: bir yangının iki saat mi iki
 /// gün mü önce olduğu, haberin kendisi kadar önemli. Mutlak tarih ancak
 /// bir günü geçince anlam kazanıyor.
-String gecenSure(DateTime an) {
-  final fark = DateTime.now().difference(an);
+///
+/// Kademe TAKVİM GÜNÜNE göre, saat farkına göre değil. Önce saat farkı
+/// kullanılıyordu ve gün sınırını atlayan haber yanlış okunuyordu: sabah
+/// 10'da, bir önceki akşam 23'te yayımlanan haber "11 saat önce" diyordu —
+/// oysa okur için o haber dünden kalma. Tersi de oluyordu: gece yarısını
+/// yeni geçmişken 25 saatlik bir haber `inDays == 1` olduğu için "dün"
+/// diyordu, gerçekte iki takvim günü geride.
+///
+/// [simdi] yalnızca test için; verilmezse o an okunuyor.
+String gecenSure(DateTime an, {DateTime? simdi}) {
+  final o = simdi ?? DateTime.now();
+  final fark = o.difference(an);
+  // Sunucu saati ileri kaymış kayıt geleceğe atılmıyor.
   if (fark.inMinutes < 1) return 'az önce';
   if (fark.inMinutes < 60) return '${fark.inMinutes} dakika önce';
-  if (fark.inHours < 24) return '${fark.inHours} saat önce';
-  if (fark.inDays == 1) return 'dün';
-  if (fark.inDays < 7) return '${fark.inDays} gün önce';
+
+  final gun = _gunSirasi(o) - _gunSirasi(an);
+  if (gun == 0) return '${fark.inHours} saat önce';
+  // Saat ekleniyor: "dün" tek başına 13 saatlik bir aralığı gösteriyor ve
+  // gün içinde ne zaman olduğu yerel haberde çoğu zaman önemli.
+  if (gun == 1) return 'dün ${DateFormat('HH:mm', 'tr').format(an)}';
+  if (gun < 7) return '$gun gün önce';
   return DateFormat('d MMM', 'tr').format(an);
 }
+
+/// Takvim gününün sıra numarası.
+///
+/// Gün farkı normalleştirilmiş yerel tarihler çıkarılarak hesaplanamaz:
+/// yaz saati uygulanan bir bölgede geçiş gününde iki gece yarısının arası
+/// 23 ya da 25 saat oluyor ve `inDays` bir gün şaşıyor. Türkiye 2016'dan
+/// beri sabit UTC+3 ama bu işlev ona bel bağlamasın.
+int _gunSirasi(DateTime t) =>
+    DateTime.utc(t.year, t.month, t.day).millisecondsSinceEpoch ~/ 86400000;
 
 class Bos extends StatelessWidget {
   const Bos({super.key, this.baslik, this.aciklama});

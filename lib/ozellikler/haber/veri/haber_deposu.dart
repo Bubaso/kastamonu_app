@@ -6,7 +6,8 @@ import '../../inceleme/model/haber.dart';
 class HaberDeposu {
   static const _secim = '''
     id, slug, baslik, spot, govde, kaynak_adi, kaynak_url, yayinci,
-    katman, onem, diaspora, durum, olusturuldu, gorsel_url, gorsel_kaynak,
+    katman, onem, diaspora, durum, olusturuldu, yayinlandi,
+    gorsel_url, gorsel_kaynak,
     kategoriler ( ad, slug ),
     haber_ilce ( ilce_id, guven, kaynak, onaylandi, ilceler ( ad ) )
   ''';

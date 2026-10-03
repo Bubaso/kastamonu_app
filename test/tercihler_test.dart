@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:kastamonu_app/cekirdek/metin.dart';
@@ -23,6 +24,9 @@ Future<ProviderContainer> _kap([Map<String, Object> baslangic = const {}]) async
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+  // `main()` ne yapıyorsa test de yapmalı: Türkçe ay ve gün adları bu
+  // çağrı olmadan `DateFormat` tarafından reddediliyor.
+  initializeDateFormatting('tr');
 
   group('Türkçe büyütme', () {
     // Bu testin varlık sebebi gerçek bir hata: bölüm etiketleri ekranda
@@ -160,17 +164,44 @@ void main() {
   });
 
   group('Geçen süre', () {
+    // Referans an SABİT. Önce `DateTime.now()` kullanılıyordu ve test
+    // günün saatine bağlıydı: gece yarısından sonra koşturulduğunda
+    // "7 saat önce" beklentisi bir önceki güne düşüyordu.
+    final simdi = DateTime(2026, 9, 20, 10, 0); // Pazar 10:00
+
     test('yerel haberde tazelik göreli okunuyor', () {
-      final simdi = DateTime.now();
-      expect(gecenSure(simdi.subtract(const Duration(seconds: 20))), 'az önce');
-      expect(gecenSure(simdi.subtract(const Duration(minutes: 5))),
-          '5 dakika önce');
-      expect(gecenSure(simdi.subtract(const Duration(hours: 7))),
-          '7 saat önce');
-      expect(gecenSure(simdi.subtract(const Duration(days: 1, hours: 1))),
-          'dün');
-      expect(gecenSure(simdi.subtract(const Duration(days: 3))),
-          '3 gün önce');
+      expect(gecenSure(simdi.subtract(const Duration(seconds: 20)),
+          simdi: simdi), 'az önce');
+      expect(gecenSure(simdi.subtract(const Duration(minutes: 5)),
+          simdi: simdi), '5 dakika önce');
+      expect(gecenSure(simdi.subtract(const Duration(hours: 7)),
+          simdi: simdi), '7 saat önce');
+      expect(gecenSure(DateTime(2026, 9, 14), simdi: simdi), '6 gün önce');
+      expect(gecenSure(DateTime(2026, 8, 8, 9), simdi: simdi), '8 Ağu');
+    });
+
+    test('kademe takvim gününe göre, saat farkına göre değil', () {
+      // Dün 23:00 — saat farkı 11, yani eski kurgu "11 saat önce" diyordu.
+      expect(gecenSure(DateTime(2026, 9, 19, 23, 0), simdi: simdi),
+          'dün 23:00');
+      // Aynı gün 00:30 — 9,5 saat geride ama hâlâ bugün.
+      expect(gecenSure(DateTime(2026, 9, 20, 0, 30), simdi: simdi),
+          '9 saat önce');
+    });
+
+    test('gece yarısını yeni geçmişken 25 saatlik haber dün demiyor', () {
+      final geceyarisi = DateTime(2026, 9, 20, 0, 30);
+      // 25 saat geride = 19 Eylül 23:30 DEĞİL, 18 Eylül 23:30.
+      expect(
+        gecenSure(geceyarisi.subtract(const Duration(hours: 25)),
+            simdi: geceyarisi),
+        '2 gün önce',
+      );
+    });
+
+    test('sunucu saati ileri kaymış kayıt geleceğe atılmıyor', () {
+      expect(gecenSure(simdi.add(const Duration(hours: 2)), simdi: simdi),
+          'az önce');
     });
   });
 }
