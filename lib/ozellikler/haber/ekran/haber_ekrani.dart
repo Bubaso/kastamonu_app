@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
@@ -250,6 +251,18 @@ class _UstCubuk extends ConsumerWidget {
                     ),
                   ),
                 ),
+                // Paylaşma kaydetmenin SOLUNDA: ikisi farklı karar ve
+                // paylaşma daha sık olanı. Dağıtımın WhatsApp üzerinden
+                // olacağı bu projenin kendi ölçümü (bkz. functions/index.js),
+                // ama portal uygulama olarak kurulduğunda adres çubuğu da
+                // görünmüyor — okurun bağlantıyı alabileceği başka hiçbir
+                // yer yoktu.
+                IconButton(
+                  onPressed: () => _paylas(context),
+                  icon: const Icon(Icons.share_outlined, size: 20),
+                  color: Tema.solgun,
+                  tooltip: 'Paylaş',
+                ),
                 // Kaydetme haberin kendi başlığında: okur "bunu sonra
                 // okurum" kararını tam burada veriyor.
                 IconButton(
@@ -264,6 +277,105 @@ class _UstCubuk extends ConsumerWidget {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  /// Paylaşılacak kanonik adres.
+  ///
+  /// `Uri.base` tarayıcıda o anki sayfanın adresi; yol stratejisi gerçek
+  /// olduğu için `/haber/slug` zaten orada. Yine de yeniden kuruluyor:
+  /// sorgu ve çapa paylaşılan bağlantıya girmemeli.
+  ///
+  /// Alan adı buraya YAZILMIYOR. Tarım Portalı'nda paylaşım adresleri koda
+  /// dağılmıştı ve alan adı değişince önizlemeler sessizce eski adresi
+  /// göstermeye devam etti; `functions/index.js` tam bu yüzden tek sabit
+  /// tutuyor. Burada da kaynak, sayfanın kendi adresi.
+  String _adres() => Uri.base.replace(
+        path: '/haber/${haber.slug}',
+        query: null,
+        fragment: null,
+      ).toString();
+
+  Future<void> _paylas(BuildContext context) async {
+    final adres = _adres();
+    final mesajci = ScaffoldMessenger.of(context);
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.white,
+      builder: (sayfa) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 4),
+              child: Text(
+                haber.baslik,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontFamily: Tema.serif,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
+                  height: 1.3,
+                  color: Tema.murekkep,
+                ),
+              ),
+            ),
+            const Divider(height: 18),
+            ListTile(
+              leading: const Icon(Icons.chat_outlined, color: Tema.patina),
+              title: const Text(
+                "WhatsApp'ta paylaş",
+                style: TextStyle(fontFamily: Tema.sans, fontSize: 15),
+              ),
+              onTap: () {
+                Navigator.pop(sayfa);
+                // wa.me hem masaüstünde (web.whatsapp.com) hem telefonda
+                // (uygulama) doğru yere düşüyor; ayrı yol gerekmiyor.
+                launchUrl(
+                  Uri.parse(
+                    'https://wa.me/?text='
+                    '${Uri.encodeComponent('${haber.baslik}\n$adres')}',
+                  ),
+                  mode: LaunchMode.externalApplication,
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.link, color: Tema.patina),
+              title: const Text(
+                'Bağlantıyı kopyala',
+                style: TextStyle(fontFamily: Tema.sans, fontSize: 15),
+              ),
+              subtitle: Text(
+                adres,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontFamily: Tema.sans,
+                  fontSize: 12,
+                  color: Tema.solgun,
+                ),
+              ),
+              onTap: () async {
+                Navigator.pop(sayfa);
+                await Clipboard.setData(ClipboardData(text: adres));
+                mesajci
+                  ..hideCurrentSnackBar()
+                  ..showSnackBar(
+                    const SnackBar(
+                      duration: Duration(seconds: 2),
+                      content: Text('Bağlantı kopyalandı.'),
+                    ),
+                  );
+              },
+            ),
+            const SizedBox(height: 8),
+          ],
         ),
       ),
     );
