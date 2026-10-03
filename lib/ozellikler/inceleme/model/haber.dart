@@ -16,7 +16,15 @@ class Haber {
   final String durum;
   final String? gorselUrl;
   final String? gorselKaynak;
+
+  /// Hattın haberi derlediği an.
   final DateTime olusturuldu;
+
+  /// Editörün yayına aldığı an. Damgayı tetikleyici koyuyor
+  /// (migration 0002), yani yalnızca `durum='yayinda'` kayıtlarda dolu.
+  /// Göçten önce yayına alınmış eski kayıtlarda boş kalabiliyor.
+  final DateTime? yayinlandi;
+
   final List<IlceBagi> ilceler;
 
   const Haber({
@@ -38,7 +46,20 @@ class Haber {
     this.yayinci,
     this.gorselUrl,
     this.gorselKaynak,
+    this.yayinlandi,
   });
+
+  /// Okura gösterilecek zaman damgası.
+  ///
+  /// Akış `yayinlandi` ile sıralanıyor; gösterimin de aynı damgaya düşmesi
+  /// ZORUNLU. Önce `olusturuldu` yazılıyordu ve ikisi ayrışıyordu: iki gün
+  /// önce derlenip bugün yayına alınan haber listenin en üstünde duruyor
+  /// ama "2 gün önce" diyordu. Okur için haberin yaşı, onun önüne
+  /// konulduğu andır.
+  ///
+  /// Göçten önceki kayıtlarda `yayinlandi` boş; orada derleme anına
+  /// düşülüyor.
+  DateTime get zaman => yayinlandi ?? olusturuldu;
 
   /// Künyede gösterilecek sade kaynak adı.
   ///
@@ -77,6 +98,9 @@ class Haber {
       olusturuldu:
           DateTime.tryParse(j['olusturuldu'] as String? ?? '')?.toLocal() ??
           DateTime.now(),
+      yayinlandi: DateTime.tryParse(
+        j['yayinlandi'] as String? ?? '',
+      )?.toLocal(),
       ilceler: baglar
           .map((b) => IlceBagi.jsondan(b as Map<String, dynamic>))
           .toList(),

@@ -395,8 +395,8 @@ class _Etiketler extends StatelessWidget {
         // Haber sayfasında hem göreli hem mutlak zaman: tazelik bir
         // bakışta, kayıt için tam tarih.
         Text(
-          '${gecenSure(haber.olusturuldu)}  ·  '
-          '${DateFormat("d MMMM y, HH:mm", 'tr').format(haber.olusturuldu)}',
+          '${gecenSure(haber.zaman)}  ·  '
+          '${DateFormat("d MMMM y, HH:mm", 'tr').format(haber.zaman)}',
           style: const TextStyle(
             fontFamily: Tema.sans,
             fontSize: 12,
