@@ -160,6 +160,12 @@ ve SSR'lı sayfalar eski paketi yüklemeye çalışıyor. Betik ayrıca
 yönlendirmeden önce sunduğu için, `index.html` yerinde kalırsa `/` isteği
 ana sayfa SSR fonksiyonuna hiç ulaşmıyor.
 
+Üçüncü iş fonksiyon bağımlılıklarını kurmak. `firebase deploy`, hangi
+fonksiyonların dışa açıldığını bulmak için kaynağı **yerel** bir Node
+sürecine yükletiyor; bir paket yerelde eksikse dağıtım o analiz adımında
+`Cannot find package` diye düşüyor. Google tarafındaki kurulum bunu
+kurtarmıyor, çünkü analiz ondan önce geliyor.
+
 ## Kararlar
 
 Aşağıdakiler üslup tercihi değil; her birinin gerekçesi ilgili dosyanın
