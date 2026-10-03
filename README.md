@@ -44,6 +44,27 @@ ilçe bağlarını onaylar → `durum='yayinda'` (ya da `reddedildi`). Okur tara
 anon anahtarla çalıştığı için RLS gereği yalnızca `yayinda` olanı görebiliyor;
 inceleme masasındaki haber kod hatasıyla bile akışa sızamaz.
 
+### Tekrar eden kayıtlar
+
+Hat aynı olayı iki ayrı kaynaktan alıp iki kayıt açabiliyor. Kendi
+tekilleştirmesi kaynak adresine bakıyor ve bu durumu yakalamıyor, çünkü
+adresler gerçekten farklı — biri Haberler.com'dan, öbürü Sondakika.com'dan
+geliyor.
+
+Portal kendini savunuyor: okuma kaynağı olan liste `tekille.dart` içindeki
+kuraldan geçiyor ve aynı olayın ikinci kaydı akışta görünmüyor. **Asıl
+çözüm hatta.** Kural oraya taşınabilsin diye eşikler ve gerekçeleri o
+dosyada açık yazılı; özeti:
+
+| Koşul | Neden |
+| --- | --- |
+| İlçe kümeleri kesişiyor ya da ikisi de boş | Yalnız başlığa bakmak "Kastamonu'da tören" ile "Tosya'da tören"i birleştirir |
+| Bölüm ailesi aynı | İki kaynak farklı kategori seçebiliyor ama aile düzeyinde ayrışmıyorlar |
+| Başlık benzerliği ≥ 0,62 | Ölçülen gerçek tekrar 0,62'nin üstünde, tekrar olmayan en yakın çift altında |
+| Derleme anları 7 günden yakın | **Yayın anı değil**: aynı olayın iki kaydı haftalarca ayrı yayımlanabiliyor |
+
+Son satır kuralı bir kez işlemez hale getirmişti; ayrıntısı dosyada.
+
 ### İlçe bağları
 
 Hat her haberi bir ya da birkaç ilçeye bağlıyor, bağın **nereden geldiğini**
