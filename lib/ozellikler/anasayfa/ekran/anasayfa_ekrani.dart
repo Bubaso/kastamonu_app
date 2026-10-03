@@ -591,6 +591,12 @@ class Odak extends StatelessWidget {
 }
 
 /// Akış satırı — küçük görsel solda, başlık sağda, özet yok.
+///
+/// Künye satırı (bölüm · ilçe · zaman) başlığın ÜSTÜNDE duruyor ve
+/// kaldırılmamalı. Bir kez kaldırıldı ve depo üretimden ayrıştı: akışın
+/// gövdesi satırlardan oluştuğu için okur, haberlerin çoğunda ne bölüme
+/// ait olduğunu da ne zaman yayımlandığını da göremiyordu. Özet burada
+/// yok — yer açan şey o, künye değil; künye tek satır ve 14 piksel.
 class Satir extends StatelessWidget {
   const Satir({super.key, required this.haber});
   final Haber haber;
@@ -623,7 +629,8 @@ class Satir extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Etiketler kaldırıldı, sadece başlık
+                    Etiketler(haber: haber, kucuk: true),
+                    const SizedBox(height: 5),
                     Text(
                       haber.baslik,
                       maxLines: 3,
