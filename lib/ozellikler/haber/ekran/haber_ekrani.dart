@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../cekirdek/gorsel.dart';
 import '../../../cekirdek/metin.dart';
 import '../../../cekirdek/tema.dart';
 import '../../../cekirdek/tercihler.dart';
@@ -139,7 +140,11 @@ class _GovdeState extends ConsumerState<_Govde> {
                       AspectRatio(
                         aspectRatio: 1200 / 630,
                         child: Image.network(
-                          haber.gorselUrl!,
+                          // Okuma sütunu en çok 720 piksel.
+                          gorselAdresi(
+                            haber.gorselUrl,
+                            mantiksalGenislik: 720,
+                          )!,
                           fit: BoxFit.cover,
                           // Ana sayfadaki ile aynı gerekçe: CanvasKit'te
                           // `loadingProgress` yükleme boyunca null kaldığı

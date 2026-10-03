@@ -25,6 +25,10 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { onRequest } from "firebase-functions/v2/https";
 
+// Görsel boyutlandırma ayrı bir dosyada: bu dosyanın derdi sunucu tarafı
+// render, onunki ağ trafiği. Dağıtımın görmesi için buradan geçiyor.
+export { gorsel } from "./gorsel.js";
+
 const BOLGE = "europe-west1";
 const SITE_ADI = "Kastamonu Haber";
 const SITE_ACIKLAMA =
