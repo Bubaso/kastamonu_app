@@ -24,7 +24,7 @@ double oran(Color a, Color b) {
 /// ikinci (%21,1). Değerler tema dosyasının yorumlarında yazılı ama yorum
 /// bozulduğunu söylemez — bu testler söyler.
 void main() {
-  const en_az = 4.5; // WCAG AA, normal metin
+  const enAz = 4.5; // WCAG AA, normal metin
 
   for (final (ad, r) in [('Açık', Renkler.acik), ('Koyu', Renkler.koyu)]) {
     group('$ad tema', () {
@@ -43,7 +43,7 @@ void main() {
           ]) {
             expect(
               oran(renk, zemin),
-              greaterThanOrEqualTo(en_az),
+              greaterThanOrEqualTo(enAz),
               reason: '$ad: $uye / $zeminAd = '
                   '${oran(renk, zemin).toStringAsFixed(2)}',
             );
@@ -52,22 +52,22 @@ void main() {
       });
 
       test('uyarı rengi yazı olarak okunabiliyor', () {
-        expect(oran(r.uyari, r.zemin), greaterThanOrEqualTo(en_az));
-        expect(oran(r.uyari, r.kart), greaterThanOrEqualTo(en_az));
+        expect(oran(r.uyari, r.zemin), greaterThanOrEqualTo(enAz));
+        expect(oran(r.uyari, r.kart), greaterThanOrEqualTo(enAz));
       });
 
       test('son dakika bandında beyaz yazı okunabiliyor', () {
-        expect(oran(Colors.white, r.sonDakika), greaterThanOrEqualTo(en_az));
+        expect(oran(Colors.white, r.sonDakika), greaterThanOrEqualTo(enAz));
       });
 
       test('patina zemin olduğunda üstündeki yazı okunabiliyor', () {
         // Koyu temada patina açılıyor; beyaz yazı 2,84:1'e düşüyordu.
-        expect(oran(r.patinaUstu, r.patina), greaterThanOrEqualTo(en_az));
+        expect(oran(r.patinaUstu, r.patina), greaterThanOrEqualTo(enAz));
       });
 
       test('koyu kuşakta metin okunabiliyor', () {
-        expect(oran(r.kusakMetin, r.kusak), greaterThanOrEqualTo(en_az));
-        expect(oran(r.kusakIkincil, r.kusak), greaterThanOrEqualTo(en_az));
+        expect(oran(r.kusakMetin, r.kusak), greaterThanOrEqualTo(enAz));
+        expect(oran(r.kusakIkincil, r.kusak), greaterThanOrEqualTo(enAz));
       });
 
       test('kart zeminden ayırt edilebiliyor', () {
@@ -93,7 +93,7 @@ void main() {
     for (final a in BolumAilesi.values) {
       expect(
         oran(Colors.white, a.renk),
-        greaterThanOrEqualTo(en_az),
+        greaterThanOrEqualTo(enAz),
         reason: '${a.name}: ${oran(Colors.white, a.renk).toStringAsFixed(2)}',
       );
     }
