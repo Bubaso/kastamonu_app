@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../cekirdek/supabase.dart';
 import '../../inceleme/model/haber.dart';
+import 'tekille.dart';
 
 /// Genel (giriş gerektirmeyen) taraf.
 ///
@@ -54,8 +55,16 @@ final anasayfaDeposuSaglayici = Provider((_) => AnasayfaDeposu());
 
 /// Yayındaki tüm haberler. `autoDispose` DEĞİL — sayfalar arası gezinirken
 /// liste sıcak kalsın ve her geçişte yeniden çekilmesin.
-final tumYayindakilerSaglayici = FutureProvider<List<Haber>>((ref) {
-  return ref.watch(anasayfaDeposuSaglayici).tumYayindakiler();
+///
+/// Liste tekilleştirmeden geçiyor: hat aynı olayı iki ayrı kaynaktan alıp
+/// iki kayıt açabiliyor ve okur onu akışta iki kez görüyordu. Burada
+/// yapılmasının sebebi, bu listenin portalın TEK okuma kaynağı olması —
+/// kapak, kategori sayfaları, arama, ilgili haberler ve İlçem hepsi bundan
+/// besleniyor, dolayısıyla tek bir yerde süzmek hepsini birden düzeltiyor.
+/// Kuralın kendisi ve neden böyle olduğu `tekille.dart` içinde.
+final tumYayindakilerSaglayici = FutureProvider<List<Haber>>((ref) async {
+  final liste = await ref.watch(anasayfaDeposuSaglayici).tumYayindakiler();
+  return tekille(liste);
 });
 
 /// Yayımlanmış haberi olan kategoriler.
