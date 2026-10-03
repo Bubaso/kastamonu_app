@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../cekirdek/bolum.dart';
 import '../../../cekirdek/gorsel.dart';
 import '../../../cekirdek/kabuk.dart';
 import '../../../cekirdek/metin.dart';
@@ -929,56 +930,9 @@ class KategoriBandi extends StatelessWidget {
   final double yukseklik;
   final bool kucuk;
 
-  /// Küçük boyda gösterilen üç harfli damga.
-  ///
-  /// Küçük görsel önce tamamen yazısızdı: 104×76'lık blokta kategori adı
-  /// sığmadığı için hiçbir şey basılmıyordu ve geriye anlamsız renkli bir
-  /// dikdörtgen kalıyordu — ekranda bozuk görsel gibi okunuyor. Yayındaki
-  /// haberin %30'unun fotoğrafı yok, yani akışta aynı anda dört tanesi
-  /// birden görülebiliyor.
-  ///
-  /// Kısaltmalar elle yazılı: otomatik kesme Türkçede yanlış üretiyor
-  /// ("Eğitim" → "EGI") ve "Kaza ve Acil" gibi iki kelimelilerde anlamsız
-  /// kalıyor.
-  static const kisaltmalar = {
-    'Asayiş': 'ASY',
-    'Kaza ve Acil': 'KAZ',
-    'Gündem': 'GND',
-    'Ekonomi': 'EKO',
-    'Tarım': 'TAR',
-    'Eğitim': 'EĞT',
-    'Spor': 'SPR',
-    'Kültür ve Turizm': 'KÜL',
-    'Sağlık': 'SAĞ',
-    'Kent ve Yönetim': 'KNT',
-  };
-
-  /// Listede olmayan bir kategori için yedek: ilk üç harf, Türkçe büyütmeyle.
-  static String kisalt(String ad) {
-    final hazir = kisaltmalar[ad];
-    if (hazir != null) return hazir;
-    final sade = ad.trim();
-    return buyult(sade.length <= 3 ? sade : sade.substring(0, 3));
-  }
-
-  /// Kategori renkleri yeni palete göre yeniden seçildi: hepsi beyaz yazıyı
-  /// taşıyacak kadar koyu ve hepsi kâğıt zeminle aynı sıcaklıkta.
-  static const renkler = {
-    'Asayiş': Color(0xFF7A2E12),
-    'Kaza ve Acil': Color(0xFFA03412),
-    'Gündem': Color(0xFF0A5F4E),
-    'Ekonomi': Color(0xFF2A4E68),
-    'Tarım': Color(0xFF47651F),
-    'Eğitim': Color(0xFF4C3E7A),
-    'Spor': Color(0xFF15614A),
-    'Kültür ve Turizm': Color(0xFF7E5210),
-    'Sağlık': Color(0xFF7E2942),
-    'Kent ve Yönetim': Color(0xFF38505F),
-  };
-
   @override
   Widget build(BuildContext context) {
-    final renk = renkler[haber.kategoriAd] ?? Tema.patina;
+    final renk = Bolum.renk(haber.kategoriAd);
     return SizedBox(
       height: yukseklik,
       width: double.infinity,
@@ -991,7 +945,7 @@ class KategoriBandi extends StatelessWidget {
                   padding: EdgeInsets.symmetric(horizontal: kucuk ? 4 : 12),
                   child: Text(
                     kucuk
-                        ? kisalt(haber.kategoriAd!)
+                        ? Bolum.kisalt(haber.kategoriAd!)
                         : buyult(haber.kategoriAd!),
                     textAlign: TextAlign.center,
                     style: TextStyle(

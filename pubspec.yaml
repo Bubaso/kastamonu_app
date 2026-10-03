@@ -74,7 +74,8 @@ flutter:
   # ve lisanslar: assets/fonts/BENIOKU.md
   #
   # Flutter Web bu listedeki HER dosyayı açılışta indiriyor; kullanılmayan
-  # kesit eklenmez. Altı kesit toplam 247 KB.
+  # kesit eklenmez. Altı kesit toplam 247 KB. Yedi girdi var ama altı
+  # dosya: "Roboto" girdisi Archivo-Regular'ı yeniden kullanıyor.
   fonts:
     - family: Newsreader
       fonts:
@@ -84,6 +85,25 @@ flutter:
           weight: 600
         - asset: assets/fonts/Newsreader-Bold.ttf
           weight: 700
+    # "Roboto" burada bir yazı tipi değil, bir YEDEK YAKALAYICI.
+    #
+    # Flutter Web (CanvasKit) açılışta Google Fonts'tan Roboto indiriyor:
+    # ölçüldü, fonts.gstatic.com'dan 62 KB. Tema `fontFamily: Archivo`
+    # verse bile iniyor, çünkü bu bir tema ayarı değil motorun kendi yedek
+    # yazı tipi. Kapatacak bir bayrak da yok.
+    #
+    # Aynı adla yerel bir aile bildirilince motor onu buluyor ve ağa
+    # çıkmıyor. Dosya Archivo'nun kendisi, yani fazladan bir bayt
+    # inmiyor — tarayıcı aynı adresi ikinci kez istemiyor.
+    #
+    # İki kazanç: portalın kritik yolunda üçüncü taraf isteği kalmıyor
+    # (KVKK tarafında da taşınan bir şey yok), ve bir glif gömülü
+    # ailelerde bulunamadığında ekrana Roboto değil Archivo düşüyor —
+    # yani yedek bile portalın kendi tipografisinde kalıyor.
+    - family: Roboto
+      fonts:
+        - asset: assets/fonts/Archivo-Regular.ttf
+          weight: 400
     - family: Archivo
       fonts:
         - asset: assets/fonts/Archivo-Regular.ttf
