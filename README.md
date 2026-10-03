@@ -65,6 +65,10 @@ dosyada açık yazılı; özeti:
 
 Son satır kuralı bir kez işlemez hale getirmişti; ayrıntısı dosyada.
 
+Hangi kaydın kalacağı okurun o bilgiyi nerede gördüğüne göre: gerçek
+fotoğraf, sonra belirgin şekilde uzun başlık (akışta görünen tek şey o),
+sonra gövde uzunluğu, eşitlikte önce derlenen.
+
 ### İlçe bağları
 
 Hat her haberi bir ya da birkaç ilçeye bağlıyor, bağın **nereden geldiğini**

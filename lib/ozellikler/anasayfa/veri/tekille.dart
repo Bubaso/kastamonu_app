@@ -136,22 +136,44 @@ bool ayniOlay(Haber a, Haber b) {
   return baslikBenzerligi(a.baslik, b.baslik) >= _benzerlikEsigi;
 }
 
+/// Başlık farkının "bu başlık gerçekten daha bilgilendirici" sayılması
+/// için gereken en az karakter.
+///
+/// Eşik olmadan tek karakterlik bir fark üç yüz karakterlik gövde farkını
+/// deviriyor; başlık uzunluğu gürültülü bir ölçüt ve küçük farkları
+/// anlamlı saymak yanlış. On karakter, kabaca bir ismin ya da yer
+/// tamlamasının eklenmesi demek — ölçülen çiftte fark 18 karakterdi
+/// (91'e 73: "Yaşar Mıcık'a ait").
+const _baslikFarkEsigi = 10;
+
 /// Aynı olayın kayıtlarından hangisi kalacak.
 ///
-/// Okurun lehine: önce gerçek fotoğrafı olan, sonra gövdesi uzun olan,
-/// eşitlikte önce derlenen. Hattın "ilk gelen kalsın" refleksi okur için
-/// doğru değil — ikinci kaynak çoğu zaman daha eksiksiz oluyor.
+/// Sıra, okurun o bilgiyi nerede gördüğüne göre:
 ///
-/// Bu ölçüt kusursuz değil ve ölçülen çift bunu gösteriyor: iki kaydın da
-/// fotoğrafı vardı, gövde 571'e 532 olduğu için uzun olan kaldı — ama
-/// DÜŞEN kaydın başlığı daha bilgilendiriciydi ("Yaşar Mıcık'a ait"
-/// diyordu). Gövde uzunluğu genel bir ölçüt, başlık zenginliği ise tek
-/// bir örneğe göre ayarlanmış olurdu; o yüzden gövde tercih edildi.
-/// Karar değişirse buradaki gerekçe de değişmeli.
+/// 1. **Gerçek fotoğraf.** Akışta en çok yer kaplayan şey.
+/// 2. **Belirgin şekilde uzun başlık.** Başlık okurun tıklamadan önce
+///    gördüğü tek şey; aynı olayın iki kaydından biri kimin, nerede,
+///    kaç kişi olduğunu yazıyorsa akışta o durmalı. Yalnızca fark
+///    [_baslikFarkEsigi] karakteri geçerse karar veriyor.
+/// 3. **Gövde uzunluğu.** Tıklandıktan sonraki içerik.
+/// 4. **Derleme anı.** Eşitlikte önce gelen.
+///
+/// Hattın "ilk gelen kalsın" refleksi okur için doğru değil — ikinci
+/// kaynak çoğu zaman daha eksiksiz oluyor.
+///
+/// Ölçülen çiftte bu sıra kararı değiştiriyor: iki kaydın da fotoğrafı
+/// var, gövde 571'e 532 (Sondakika önde) ama başlık 91'e 73 (Haberler.com
+/// önde, "Yaşar Mıcık'a ait" diyen taraf). Başlık farkı 18 karakter, yani
+/// eşiğin üstünde; akışta kalan kayıt artık sahibin adını yazan oluyor.
+/// Gerçek veriyle doğrulandı.
 int _ustunluk(Haber a, Haber b) {
   final fa = (a.gorselKaynak ?? '').isNotEmpty && (a.gorselUrl ?? '').isNotEmpty;
   final fb = (b.gorselKaynak ?? '').isNotEmpty && (b.gorselUrl ?? '').isNotEmpty;
   if (fa != fb) return fa ? -1 : 1;
+
+  final ba = a.baslik.length;
+  final bb = b.baslik.length;
+  if ((ba - bb).abs() >= _baslikFarkEsigi) return bb.compareTo(ba);
 
   final ga = (a.govde ?? '').length;
   final gb = (b.govde ?? '').length;
