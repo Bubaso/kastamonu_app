@@ -76,8 +76,9 @@ class _Basi extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final r = Renkler.of(context);
     return Container(
-      color: Tema.sunk,
+      color: r.sunk,
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1080),
@@ -85,24 +86,24 @@ class _Basi extends ConsumerWidget {
             padding: const EdgeInsets.fromLTRB(18, 12, 12, 12),
             child: Row(
               children: [
-                const Icon(Icons.place, size: 17, color: Tema.bakir),
+                Icon(Icons.place, size: 17, color: r.bakir),
                 const SizedBox(width: 7),
                 Expanded(
                   child: Text(
                     ilcem.ad,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: Tema.serif,
                       fontWeight: FontWeight.w700,
                       fontSize: 19,
                       letterSpacing: -0.3,
-                      color: Tema.murekkep,
+                      color: r.murekkep,
                     ),
                   ),
                 ),
                 TextButton(
                   onPressed: () =>
                       ref.read(ilcemSaglayici.notifier).temizle(),
-                  style: TextButton.styleFrom(foregroundColor: Tema.patina),
+                  style: TextButton.styleFrom(foregroundColor: r.patina),
                   child: const Text(
                     'Değiştir',
                     style: TextStyle(
@@ -131,6 +132,7 @@ class _Secim extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final r = Renkler.of(context);
     final ilceler = ref.watch(tumIlcelerSaglayici);
 
     return SliverToBoxAdapter(
@@ -142,7 +144,7 @@ class _Secim extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'İlçeni seç',
                   style: TextStyle(
                     fontFamily: Tema.serif,
@@ -150,18 +152,18 @@ class _Secim extends ConsumerWidget {
                     fontSize: 25,
                     height: 1.16,
                     letterSpacing: -0.5,
-                    color: Tema.murekkep,
+                    color: r.murekkep,
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Bir kez seç, bu sekme hep senin ilçenle açılsın. '
                   'Seçimin yalnızca bu cihazda saklanır; üyelik gerekmez.',
                   style: TextStyle(
                     fontFamily: Tema.sans,
                     fontSize: 14.5,
                     height: 1.55,
-                    color: Tema.murekkepIkincil,
+                    color: r.murekkepIkincil,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -172,11 +174,11 @@ class _Secim extends ConsumerWidget {
                   ),
                   error: (h, _) => Text('$h'),
                   data: (liste) => liste.isEmpty
-                      ? const Text(
+                      ? Text(
                           'Henüz ilçe etiketli haber yok.',
                           style: TextStyle(
                             fontFamily: Tema.sans,
-                            color: Tema.solgun,
+                            color: r.solgun,
                           ),
                         )
                       : Wrap(
@@ -205,8 +207,9 @@ class _Dugme extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final r = Renkler.of(context);
     return Material(
-      color: Colors.white,
+      color: r.kart,
       child: InkWell(
         onTap: () => ref.read(ilcemSaglayici.notifier).sec(id, ad),
         child: Container(
@@ -214,28 +217,28 @@ class _Dugme extends ConsumerWidget {
           constraints: const BoxConstraints(minHeight: 52),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
           decoration: BoxDecoration(
-            border: Border.all(color: Tema.cizgiKuvvetli),
+            border: Border.all(color: r.cizgiKuvvetli),
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 ad,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: Tema.serif,
                   fontWeight: FontWeight.w600,
                   fontSize: 17,
-                  color: Tema.murekkep,
+                  color: r.murekkep,
                 ),
               ),
               const SizedBox(width: 8),
               Text(
                 '$adet',
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: Tema.sans,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: Tema.solgun,
+                  color: r.solgun,
                 ),
               ),
             ],

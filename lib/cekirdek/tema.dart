@@ -90,78 +90,85 @@ class Tema {
     height: 1.3,
   );
 
-  static ThemeData olustur() {
+  /// Açık ve koyu tema aynı yerden üretiliyor; fark yalnızca [r].
+  static ThemeData olustur({
+    Renkler r = Renkler.acik,
+    Brightness parlaklik = Brightness.light,
+  }) {
     final base = ThemeData(
       useMaterial3: true,
+      brightness: parlaklik,
       colorScheme: ColorScheme.fromSeed(
-        seedColor: patina,
-        surface: zemin,
-        primary: patina,
-        error: sonDakika,
+        seedColor: r.patina,
+        brightness: parlaklik,
+        surface: r.zemin,
+        primary: r.patina,
+        error: r.sonDakika,
       ),
       // Arayüzün varsayılanı Archivo; serif yalnızca haber metninde.
       fontFamily: sans,
     );
 
     return base.copyWith(
-      scaffoldBackgroundColor: zemin,
+      extensions: [r],
+      scaffoldBackgroundColor: r.zemin,
       textTheme: base.textTheme.copyWith(
         // ── Haber dizgisi (Newsreader) ──────────────────────
-        displaySmall: const TextStyle(
+        displaySmall: TextStyle(
           fontFamily: serif,
           fontWeight: FontWeight.w700,
           fontSize: 34,
           height: 1.14,
           letterSpacing: -0.7,
-          color: murekkep,
+          color: r.murekkep,
         ),
-        headlineSmall: const TextStyle(
+        headlineSmall: TextStyle(
           fontFamily: serif,
           fontWeight: FontWeight.w700,
           fontSize: 24,
           height: 1.18,
           letterSpacing: -0.35,
-          color: murekkep,
+          color: r.murekkep,
         ),
-        titleLarge: const TextStyle(
+        titleLarge: TextStyle(
           fontFamily: serif,
           fontWeight: FontWeight.w700,
           fontSize: 20,
           height: 1.19,
           letterSpacing: -0.3,
-          color: murekkep,
+          color: r.murekkep,
         ),
         // Akıştaki satır başlıkları — manşetten yarım kademe hafif.
-        titleMedium: const TextStyle(
+        titleMedium: TextStyle(
           fontFamily: serif,
           fontWeight: FontWeight.w600,
           fontSize: 16,
           height: 1.27,
           letterSpacing: -0.12,
-          color: murekkep,
+          color: r.murekkep,
         ),
         // Haber gövdesi. 17,5 taban; okur punto ayarıyla büyütebiliyor.
-        bodyLarge: const TextStyle(
+        bodyLarge: TextStyle(
           fontFamily: serif,
           fontWeight: FontWeight.w400,
           fontSize: 17.5,
           height: 1.66,
-          color: murekkep,
+          color: r.murekkep,
         ),
         // Spot / giriş paragrafı.
-        bodyMedium: const TextStyle(
+        bodyMedium: TextStyle(
           fontFamily: serif,
           fontWeight: FontWeight.w400,
           fontSize: 16.5,
           height: 1.52,
-          color: murekkepIkincil,
+          color: r.murekkepIkincil,
         ),
         // ── Arayüz (Archivo) ────────────────────────────────
-        bodySmall: const TextStyle(
+        bodySmall: TextStyle(
           fontFamily: sans,
           fontSize: 13,
           height: 1.4,
-          color: solgun,
+          color: r.solgun,
         ),
         labelLarge: const TextStyle(
           fontFamily: sans,
@@ -171,25 +178,25 @@ class Tema {
         ),
         labelMedium: etiket,
       ),
-      cardTheme: const CardThemeData(
+      cardTheme: CardThemeData(
         elevation: 0,
-        color: Colors.white,
+        color: r.kart,
         // Gazete köşesi keskindir. Önceki 10 px yuvarlaklık uygulamayı
         // habere değil panele benzetiyordu.
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(2)),
-          side: BorderSide(color: cizgi),
+          borderRadius: const BorderRadius.all(Radius.circular(2)),
+          side: BorderSide(color: r.cizgi),
         ),
       ),
-      dividerTheme: const DividerThemeData(color: cizgi, space: 1, thickness: 1),
-      textSelectionTheme: const TextSelectionThemeData(
-        selectionColor: patinaZemin,
-        cursorColor: patina,
+      dividerTheme: DividerThemeData(color: r.cizgi, space: 1, thickness: 1),
+      textSelectionTheme: TextSelectionThemeData(
+        selectionColor: r.patinaZemin,
+        cursorColor: r.patina,
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          backgroundColor: patina,
-          foregroundColor: Colors.white,
+          backgroundColor: r.patina,
+          foregroundColor: r.patinaUstu,
           textStyle: const TextStyle(
             fontFamily: sans,
             fontWeight: FontWeight.w600,
@@ -202,15 +209,167 @@ class Tema {
           minimumSize: const Size(0, 48),
         ),
       ),
-      snackBarTheme: const SnackBarThemeData(
-        backgroundColor: murekkep,
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: r.murekkep,
         contentTextStyle: TextStyle(
           fontFamily: sans,
           fontSize: 14.5,
-          color: Color(0xFFFAF7F2),
+          // Zemin `murekkep`; yazı da zeminin karşıtı olmak zorunda.
+          // Sabit açık renk yazılsaydı koyu temada açık üstüne açık
+          // düşerdi.
+          color: r.zemin,
         ),
         behavior: SnackBarBehavior.floating,
       ),
     );
   }
+}
+
+/// Temaya bağlı renkler.
+///
+/// Neden ayrı bir katman
+/// ─────────────────────
+/// [Tema] içindeki değerler `const`: `const TextStyle(color: Tema.murekkep)`
+/// yazabilmek bundan geliyor ve derleme anında sabit oldukları için temaya
+/// göre değişemiyorlar. Koyu tema, tek bir kaynaktan okunan ve bağlamla
+/// gelen bir renk kümesi istiyor — burası o küme.
+///
+/// Kullanımı: her `build` başında bir kez `final r = Renkler.of(context);`
+/// ve sonra `r.murekkep`.
+///
+/// Koyu değerler tahminle seçilmedi, hesaplandı. Portalın okur kitlesi için
+/// kontrast bir üslup tercihi değil kısıt (ortanca yaş 43,3, 65 üstü oranı
+/// %21,1), dolayısıyla koyu temada da hiçbir metin rengi WCAG AA'nın
+/// altına düşmüyor: en düşük oran `solgun`, zemin üstünde 6,12:1.
+@immutable
+class Renkler extends ThemeExtension<Renkler> {
+  const Renkler({
+    required this.zemin,
+    required this.sunk,
+    required this.sunkKoyu,
+    required this.kart,
+    required this.murekkep,
+    required this.murekkepIkincil,
+    required this.solgun,
+    required this.patina,
+    required this.patinaUstu,
+    required this.patinaZemin,
+    required this.bakir,
+    required this.sonDakika,
+    required this.uyari,
+    required this.cizgi,
+    required this.cizgiKuvvetli,
+    required this.kusak,
+    required this.kusakMetin,
+    required this.kusakIkincil,
+  });
+
+  /// Sayfa zemini.
+  final Color zemin;
+
+  /// Bir ve iki kademe çökük yüzeyler.
+  final Color sunk;
+  final Color sunkKoyu;
+
+  /// Kart ve şerit yüzeyi. Açık temada beyaz; koyu temada zeminden bir
+  /// kademe açık, yoksa kartın nerede bittiği görünmüyor.
+  final Color kart;
+
+  final Color murekkep;
+  final Color murekkepIkincil;
+  final Color solgun;
+
+  final Color patina;
+
+  /// Patina ZEMİN olarak kullanıldığında üstüne düşen yazı.
+  ///
+  /// Açık temada patina koyu bir yeşil, üstüne beyaz geliyor (7,61:1).
+  /// Koyu temada açılıyor ve beyaz yazı 2,84:1'e düşüyor — AA'nın çok
+  /// altı. Koyu temada üstüne sayfa zemini düşüyor: 6,59:1.
+  final Color patinaUstu;
+
+  final Color patinaZemin;
+  final Color bakir;
+
+  /// Son dakika bandının ZEMİNİ. Üstünde her zaman beyaz yazı var.
+  final Color sonDakika;
+
+  /// Kırmızının YAZI olarak kullanımı (yıkıcı eylemler).
+  ///
+  /// Bantla aynı değer olamıyor: bant zemin olduğu için koyulaşması,
+  /// yazı ise zeminden ayrılmak için açılması gerekiyor. Koyu temada tek
+  /// bir kırmızı ikisini birden yapamıyor.
+  final Color uyari;
+
+  final Color cizgi;
+  final Color cizgiKuvvetli;
+
+  /// Kapaktaki asayiş kuşağının zemini.
+  ///
+  /// Açık temada mürekkep. Koyu temada mürekkep OLAMAZ: sayfa zemini zaten
+  /// o renk, kuşak görünmez olurdu. Bir kademe açık ve sıcak bir kömür.
+  final Color kusak;
+  final Color kusakMetin;
+
+  /// Kuşaktaki yer etiketi — bakırın kuşak üstündeki karşılığı.
+  final Color kusakIkincil;
+
+  static const acik = Renkler(
+    zemin: Tema.zemin,
+    sunk: Tema.sunk,
+    sunkKoyu: Tema.sunkKoyu,
+    kart: Colors.white,
+    murekkep: Tema.murekkep,
+    murekkepIkincil: Tema.murekkepIkincil,
+    solgun: Tema.solgun,
+    patina: Tema.patina,
+    patinaUstu: Colors.white, // 7,61:1
+    patinaZemin: Tema.patinaZemin,
+    bakir: Tema.bakir,
+    sonDakika: Tema.sonDakika,
+    uyari: Tema.sonDakika,
+    cizgi: Tema.cizgi,
+    cizgiKuvvetli: Tema.cizgiKuvvetli,
+    kusak: Tema.murekkep,
+    kusakMetin: Tema.zemin,
+    kusakIkincil: Color(0xFFC9B99A),
+  );
+
+  static const koyu = Renkler(
+    // Açık temanın mürekkebi koyu temanın zemini oluyor; palet kendi
+    // içinde dönüyor, yeni bir renk ailesi uydurulmuyor.
+    zemin: Color(0xFF14120F),
+    sunk: Color(0xFF1F1B16),
+    sunkKoyu: Color(0xFF2A241D),
+    kart: Color(0xFF1A1713),
+    murekkep: Color(0xFFF3EFE8), // zemin üstünde 16,31:1
+    murekkepIkincil: Color(0xFFCFC7BA), // 11,16:1
+    solgun: Color(0xFF9C9286), // 6,12:1 — koyu temanın en düşüğü
+    patina: Color(0xFF4FA98F), // 6,59:1
+    patinaUstu: Color(0xFF14120F), // patina üstünde 6,59:1
+    patinaZemin: Color(0xFF16302A),
+    bakir: Color(0xFFDB8551), // 6,66:1
+    // Bant zemini koyulaşıyor: üstündeki beyaz yazı 6,5:1 kalıyor ve
+    // kömür zeminde parlamıyor.
+    sonDakika: Color(0xFFB81228),
+    // Yazı olarak kırmızı ise açılıyor: zemin üstünde 6,56:1.
+    uyari: Color(0xFFF0717F),
+    cizgi: Color(0xFF332E26),
+    cizgiKuvvetli: Color(0xFF4C453A),
+    kusak: Color(0xFF2A241D),
+    kusakMetin: Color(0xFFF3EFE8),
+    kusakIkincil: Color(0xFFC9B99A),
+  );
+
+  static Renkler of(BuildContext context) =>
+      Theme.of(context).extension<Renkler>() ?? acik;
+
+  @override
+  Renkler copyWith() => this;
+
+  @override
+  Renkler lerp(ThemeExtension<Renkler>? other, double t) =>
+      // Tema geçişinde ara renk üretilmiyor: gazete yüzeyi yarı yolda
+      // çamur rengine düşmesin, bir karede değişsin.
+      t < 0.5 ? this : (other as Renkler? ?? this);
 }

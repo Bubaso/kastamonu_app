@@ -34,6 +34,7 @@ class Kabuk extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final r = Renkler.of(context);
     if (!darMi(context)) return Scaffold(body: gezinti);
 
     final kayitliAdet = ref.watch(kaydedilenlerSaglayici).length;
@@ -43,9 +44,9 @@ class Kabuk extends ConsumerWidget {
       bottomNavigationBar: DecoratedBox(
         // Gazete kuralı: alt çubuk sayfadan kalın bir çizgiyle ayrılıyor,
         // gölgeyle değil.
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(top: BorderSide(color: Tema.murekkep, width: 2)),
+        decoration: BoxDecoration(
+          color: r.kart,
+          border: Border(top: BorderSide(color: r.murekkep, width: 2)),
         ),
         child: SafeArea(
           top: false,
@@ -109,7 +110,8 @@ class _Sekme extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final renk = etkin ? Tema.patina : Tema.solgun;
+    final r = Renkler.of(context);
+    final renk = etkin ? r.patina : r.solgun;
     return Expanded(
       child: Semantics(
         selected: etkin,
@@ -132,9 +134,10 @@ class _Sekme extends StatelessWidget {
                           horizontal: 4.5,
                           vertical: 1,
                         ),
-                        decoration: const BoxDecoration(
-                          color: Tema.bakir,
-                          borderRadius: BorderRadius.all(Radius.circular(9)),
+                        decoration: BoxDecoration(
+                          color: r.bakir,
+                          borderRadius:
+                              const BorderRadius.all(Radius.circular(9)),
                         ),
                         child: Text(
                           '$adet',
@@ -178,6 +181,7 @@ class GenisGezinti extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final r = Renkler.of(context);
     final adet = ref.watch(kaydedilenlerSaglayici).length;
     final yol = GoRouterState.of(context).matchedLocation;
 
@@ -185,7 +189,7 @@ class GenisGezinti extends ConsumerWidget {
       final etkin = hedef == '/'
           ? (yol == '/' || yol.startsWith('/kategori'))
           : yol.startsWith(hedef);
-      final renk = etkin ? Tema.patina : Tema.solgun;
+      final renk = etkin ? r.patina : r.solgun;
       return TextButton.icon(
         onPressed: () => context.go(hedef),
         icon: Icon(simge, size: 17, color: renk),

@@ -140,11 +140,12 @@ class Kunye extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final r = Renkler.of(context);
     final genis = !Kabuk.darMi(context);
     final enYeni = ref.watch(tumYayindakilerSaglayici).asData?.value.firstOrNull;
     final tarih = _Tarih(enYeni: enYeni?.zaman);
     return SliverAppBar(
-      backgroundColor: Colors.white,
+      backgroundColor: r.kart,
       floating: true,
       pinned: false,
       elevation: 0,
@@ -152,7 +153,7 @@ class Kunye extends ConsumerWidget {
       titleSpacing: 0,
       bottom: PreferredSize(
         preferredSize: const Size.fromHeight(2),
-        child: Container(color: Tema.murekkep, height: 2),
+        child: Container(color: r.murekkep, height: 2),
       ),
       flexibleSpace: Center(
         child: ConstrainedBox(
@@ -173,7 +174,7 @@ class Kunye extends ConsumerWidget {
                       fontSize: genis ? 26 : 21,
                       letterSpacing: -0.6,
                       height: 1.05,
-                      color: Tema.murekkep,
+                      color: r.murekkep,
                     ),
                   ),
                   ),
@@ -183,7 +184,7 @@ class Kunye extends ConsumerWidget {
                     width: 1,
                     height: 28,
                     margin: const EdgeInsets.symmetric(horizontal: 16),
-                    color: Tema.cizgi,
+                    color: r.cizgi,
                   ),
                   tarih,
                   const Spacer(),
@@ -191,13 +192,13 @@ class Kunye extends ConsumerWidget {
                   IconButton(
                     onPressed: () => context.go('/ara'),
                     icon: const Icon(Icons.search, size: 20),
-                    color: Tema.solgun,
+                    color: r.solgun,
                     tooltip: 'Ara',
                   ),
                   IconButton(
                     onPressed: () => context.go('/panel'),
                     icon: const Icon(Icons.dashboard_outlined, size: 18),
-                    color: Tema.solgun,
+                    color: r.solgun,
                     tooltip: 'Panel',
                   ),
                 ] else ...[
@@ -206,7 +207,7 @@ class Kunye extends ConsumerWidget {
                   IconButton(
                     onPressed: () => context.go('/ara'),
                     icon: const Icon(Icons.search, size: 20),
-                    color: Tema.solgun,
+                    color: r.solgun,
                     tooltip: 'Ara',
                     visualDensity: VisualDensity.compact,
                     padding: const EdgeInsets.only(left: 8),
@@ -231,28 +232,29 @@ class _Tarih extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final r = Renkler.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.end,
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
           DateFormat('d MMMM, EEEE', 'tr').format(DateTime.now()),
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: Tema.sans,
             fontSize: 12,
             height: 1.25,
             fontWeight: FontWeight.w500,
-            color: Tema.murekkepIkincil,
+            color: r.murekkepIkincil,
           ),
         ),
         if (enYeni != null)
           Text(
             'son güncelleme ${saatDamgasi(enYeni!)}',
-            style: const TextStyle(
+            style: TextStyle(
               fontFamily: Tema.sans,
               fontSize: 10.5,
               height: 1.3,
-              color: Tema.solgun,
+              color: r.solgun,
             ),
           ),
       ],
@@ -277,6 +279,7 @@ class _SonDakika extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final r = Renkler.of(context);
     final liste = ref.watch(tumYayindakilerSaglayici).asData?.value;
     if (liste == null || liste.isEmpty) {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
@@ -297,7 +300,7 @@ class _SonDakika extends ConsumerWidget {
         excludeSemantics: true,
         onTap: () => context.go('/haber/${h.slug}'),
         child: Material(
-        color: Tema.sonDakika,
+        color: r.sonDakika,
         child: InkWell(
           onTap: () => context.go('/haber/${h.slug}'),
           child: Center(
@@ -367,14 +370,15 @@ class _KategoriCubugu extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final r = Renkler.of(context);
     final kategoriler = ref.watch(kategoriListesiSaglayici);
     final secili = ref.watch(kategoriSecimiSaglayici);
 
     return SliverToBoxAdapter(
       child: DecoratedBox(
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          border: Border(bottom: BorderSide(color: Tema.cizgi)),
+        decoration: BoxDecoration(
+          color: r.kart,
+          border: Border(bottom: BorderSide(color: r.cizgi)),
         ),
         child: Center(
           child: ConstrainedBox(
@@ -405,6 +409,7 @@ class _KategoriCubugu extends ConsumerWidget {
   }
 
   Widget _baglanti(BuildContext c, String ad, String? slug, bool sec) {
+    final r = Renkler.of(c);
     return InkWell(
       onTap: () => c.go(slug == null ? '/' : '/kategori/$slug'),
       child: Container(
@@ -413,7 +418,7 @@ class _KategoriCubugu extends ConsumerWidget {
         decoration: BoxDecoration(
           border: Border(
             bottom: BorderSide(
-              color: sec ? Tema.patina : Colors.transparent,
+              color: sec ? r.patina : Colors.transparent,
               width: 2.5,
             ),
           ),
@@ -426,7 +431,7 @@ class _KategoriCubugu extends ConsumerWidget {
             fontFamily: Tema.sans,
             fontSize: 13.5,
             fontWeight: sec ? FontWeight.w600 : FontWeight.w400,
-            color: sec ? Tema.patina : Tema.murekkep,
+            color: sec ? r.patina : r.murekkep,
           ),
         ),
       ),
@@ -461,7 +466,7 @@ class _Akis extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final genis = MediaQuery.sizeOf(context).width >= 860;
-    return genis ? _genis() : _dar();
+    return genis ? _genis(context) : _dar();
   }
 
   static Widget _ortala(Widget cocuk) => Center(
@@ -489,7 +494,8 @@ class _Akis extends StatelessWidget {
   /// Geniş ekranda manşeti tek başına tam genişliğe yaymak sayfayı
   /// boşaltıyor — gözün ilk gördüğü yerde tek haber kalıyor. Yan sütun
   /// aynı alanda beş başlık daha veriyor.
-  Widget _genis() {
+  Widget _genis(BuildContext context) {
+    final r = Renkler.of(context);
     final yan = liste.skip(1).take(5).toList();
     final alt = liste.skip(6).toList();
     // İki sütun: çiftler hâlinde, sıra soldan sağa korunuyor.
@@ -507,7 +513,7 @@ class _Akis extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Expanded(child: Satir(haber: sol)),
-                Container(width: 1, color: Tema.cizgi),
+                Container(width: 1, color: r.cizgi),
                 Expanded(
                   child: sag == null
                       ? const SizedBox.shrink()
@@ -531,12 +537,13 @@ class _UstBlok extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final r = Renkler.of(context);
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Expanded(flex: 62, child: Manset(haber: manset, genis: true)),
-          Container(width: 1, color: Tema.cizgi),
+          Container(width: 1, color: r.cizgi),
           Expanded(
             flex: 38,
             child: Column(
@@ -571,6 +578,7 @@ class Manset extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final r = Renkler.of(context);
     void git() {
       HapticFeedback.lightImpact();
       context.go('/haber/${haber.slug}');
@@ -582,7 +590,7 @@ class Manset extends StatelessWidget {
       excludeSemantics: true,
       onTap: git,
       child: Material(
-      color: Colors.white,
+      color: r.kart,
       child: InkWell(
         onTap: git,
         child: Container(
@@ -610,7 +618,7 @@ class Manset extends StatelessWidget {
                         fontSize: genis ? 36 : 26,
                         height: 1.16,
                         letterSpacing: -0.5,
-                        color: Tema.murekkep,
+                        color: r.murekkep,
                       ),
                     ),
                     if ((haber.spot ?? '').isNotEmpty) ...[
@@ -623,7 +631,7 @@ class Manset extends StatelessWidget {
                           fontFamily: Tema.serif,
                           fontSize: genis ? 17 : 16,
                           height: 1.45,
-                          color: Tema.murekkepIkincil,
+                          color: r.murekkepIkincil,
                         ),
                       ),
                     ],
@@ -647,6 +655,7 @@ class Odak extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final r = Renkler.of(context);
     void git() {
       HapticFeedback.lightImpact();
       context.go('/haber/${haber.slug}');
@@ -658,7 +667,7 @@ class Odak extends StatelessWidget {
       excludeSemantics: true,
       onTap: git,
       child: Material(
-      color: Colors.white,
+      color: r.kart,
       child: InkWell(
         onTap: git,
         child: Container(
@@ -679,13 +688,13 @@ class Odak extends StatelessWidget {
                       haber.baslik,
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: Tema.serif,
                         fontWeight: FontWeight.w700,
                         fontSize: 21,
                         height: 1.18,
                         letterSpacing: -0.3,
-                        color: Tema.murekkep,
+                        color: r.murekkep,
                       ),
                     ),
                     // Odak zaten akışın "nefes alan" bloğu; iki satır spot
@@ -697,11 +706,11 @@ class Odak extends StatelessWidget {
                         haber.spot!,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontFamily: Tema.serif,
                           fontSize: 15.5,
                           height: 1.45,
-                          color: Tema.murekkepIkincil,
+                          color: r.murekkepIkincil,
                         ),
                       ),
                     ],
@@ -725,14 +734,17 @@ class Odak extends StatelessWidget {
 /// ait olduğunu da ne zaman yayımlandığını da göremiyordu. Özet burada
 /// yok — yer açan şey o, künye değil; künye tek satır ve 14 piksel.
 class Satir extends StatelessWidget {
-  const Satir({super.key, required this.haber, this.zemin = Colors.white});
+  const Satir({super.key, required this.haber, this.zemin});
   final Haber haber;
 
-  /// Satırın zemini. Çökük kuşaklarda beyaz satır sayfadan kopuyor.
-  final Color zemin;
+  /// Satırın zemini. Çökük kuşaklarda kart rengi sayfadan kopuyor.
+  /// Verilmezse kart rengi — temaya bağlı olduğu için yapıcıda sabit
+  /// olamıyor.
+  final Color? zemin;
 
   @override
   Widget build(BuildContext context) {
+    final r = Renkler.of(context);
     void git() {
       HapticFeedback.lightImpact();
       context.go('/haber/${haber.slug}');
@@ -744,7 +756,7 @@ class Satir extends StatelessWidget {
       excludeSemantics: true,
       onTap: git,
       child: Material(
-      color: zemin,
+      color: zemin ?? r.kart,
       child: InkWell(
         onTap: git,
         child: Container(
@@ -777,13 +789,13 @@ class Satir extends StatelessWidget {
                       haber.baslik,
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontFamily: Tema.serif,
                         fontWeight: FontWeight.w600,
                         fontSize: 16.5,
                         height: 1.27,
                         letterSpacing: -0.1,
-                        color: Tema.murekkep,
+                        color: r.murekkep,
                       ),
                     ),
                   ],
@@ -1016,6 +1028,7 @@ class Etiketler extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final r = Renkler.of(context);
     final ilce = haber.ilceler.where((b) => b.onaylandi).map((b) => b.ad);
     final olcu = kucuk ? 10.0 : 11.0;
     return Wrap(
@@ -1031,7 +1044,7 @@ class Etiketler extends StatelessWidget {
               fontSize: olcu,
               fontWeight: FontWeight.w700,
               letterSpacing: 1.0,
-              color: Tema.patina,
+              color: r.patina,
             ),
           ),
         ...ilce.map(
@@ -1042,7 +1055,7 @@ class Etiketler extends StatelessWidget {
               fontSize: olcu,
               fontWeight: FontWeight.w700,
               letterSpacing: 1.0,
-              color: Tema.bakir,
+              color: r.bakir,
             ),
           ),
         ),
@@ -1051,7 +1064,7 @@ class Etiketler extends StatelessWidget {
           style: TextStyle(
             fontFamily: Tema.sans,
             fontSize: olcu + 0.5,
-            color: Tema.solgun,
+            color: r.solgun,
           ),
         ),
       ],
@@ -1143,31 +1156,32 @@ class Bos extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final r = Renkler.of(context);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(40),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.article_outlined, size: 40, color: Tema.cizgiKuvvetli),
+            Icon(Icons.article_outlined, size: 40, color: r.cizgiKuvvetli),
             const SizedBox(height: 14),
             Text(
               baslik ?? 'Bu seçimde yayımlanmış haber yok.',
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: Tema.serif,
                 fontSize: 17,
-                color: Tema.murekkepIkincil,
+                color: r.murekkepIkincil,
               ),
             ),
             const SizedBox(height: 6),
             Text(
               aciklama ?? 'Panelden haber yayınlandığında burada görünür.',
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: Tema.sans,
                 fontSize: 13,
-                color: Tema.solgun,
+                color: r.solgun,
                 height: 1.5,
               ),
             ),
@@ -1183,8 +1197,9 @@ class Alt extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final r = Renkler.of(context);
     return Container(
-      color: Tema.sunk,
+      color: r.sunk,
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1080),
@@ -1193,33 +1208,35 @@ class Alt extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Kastamonu Haber',
                   style: TextStyle(
                     fontFamily: Tema.serif,
                     fontWeight: FontWeight.w700,
                     fontSize: 17,
-                    color: Tema.murekkep,
+                    color: r.murekkep,
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
+                Text(
                   'Haberler kaynak gösterilerek derlenmektedir. Her haberin '
                   'künyesinde özgün kaynağı belirtilir.',
                   style: TextStyle(
                     fontFamily: Tema.sans,
                     fontSize: 12.5,
-                    color: Tema.solgun,
+                    color: r.solgun,
                     height: 1.55,
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 16),
+                const _TemaSecici(),
+                const SizedBox(height: 10),
                 TextButton.icon(
                   onPressed: () => context.go('/panel'),
                   icon: const Icon(Icons.dashboard_outlined, size: 16),
                   label: const Text('Panel'),
                   style: TextButton.styleFrom(
-                    foregroundColor: Tema.solgun,
+                    foregroundColor: r.solgun,
                     padding: EdgeInsets.zero,
                     minimumSize: const Size(0, 36),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -1240,24 +1257,25 @@ class Iskelet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final r = Renkler.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Container(height: 250, color: Tema.cizgi.withValues(alpha: 0.5)),
+        Container(height: 250, color: r.cizgi.withValues(alpha: 0.5)),
         Padding(
           padding: const EdgeInsets.all(18),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(width: 80, height: 16, color: Tema.cizgi.withValues(alpha: 0.5)),
+              Container(width: 80, height: 16, color: r.cizgi.withValues(alpha: 0.5)),
               const SizedBox(height: 12),
-              Container(width: double.infinity, height: 26, color: Tema.cizgi.withValues(alpha: 0.5)),
+              Container(width: double.infinity, height: 26, color: r.cizgi.withValues(alpha: 0.5)),
               const SizedBox(height: 8),
-              Container(width: 200, height: 26, color: Tema.cizgi.withValues(alpha: 0.5)),
+              Container(width: 200, height: 26, color: r.cizgi.withValues(alpha: 0.5)),
             ],
           ),
         ),
-        const Divider(height: 1, color: Tema.cizgi),
+        Divider(height: 1, color: r.cizgi),
         _IskeletSatir(),
         _IskeletSatir(),
         _IskeletSatir(),
@@ -1269,23 +1287,24 @@ class Iskelet extends StatelessWidget {
 class _IskeletSatir extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
+    final r = Renkler.of(context);
     return Container(
-      decoration: const BoxDecoration(border: Border(bottom: BorderSide(color: Tema.cizgi))),
+      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: r.cizgi))),
       padding: const EdgeInsets.fromLTRB(18, 12, 18, 12),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(width: 68, height: 68, color: Tema.cizgi.withValues(alpha: 0.5)),
+          Container(width: 68, height: 68, color: r.cizgi.withValues(alpha: 0.5)),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(width: 60, height: 14, color: Tema.cizgi.withValues(alpha: 0.5)),
+                Container(width: 60, height: 14, color: r.cizgi.withValues(alpha: 0.5)),
                 const SizedBox(height: 8),
-                Container(width: double.infinity, height: 16, color: Tema.cizgi.withValues(alpha: 0.5)),
+                Container(width: double.infinity, height: 16, color: r.cizgi.withValues(alpha: 0.5)),
                 const SizedBox(height: 6),
-                Container(width: 150, height: 16, color: Tema.cizgi.withValues(alpha: 0.5)),
+                Container(width: 150, height: 16, color: r.cizgi.withValues(alpha: 0.5)),
               ],
             ),
           ),
@@ -1320,6 +1339,7 @@ class _Kapak extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final r = Renkler.of(context);
     final kapak = ref.watch(kapakSaglayici);
     if (kapak.bosMu) {
       return const SliverFillRemaining(hasScrollBody: false, child: Bos());
@@ -1349,10 +1369,10 @@ class _Kapak extends ConsumerWidget {
               ),
             if (kapak.gozden.isNotEmpty) _Gozden(haberler: kapak.gozden),
             if (kapak.kalan.isNotEmpty)
-              const _Orta(
+              _Orta(
                 child: ColoredBox(
-                  color: Colors.white,
-                  child: Padding(
+                  color: r.kart,
+                  child: const Padding(
                     padding: EdgeInsets.fromLTRB(18, 18, 18, 2),
                     child: _BolumBasligi(baslik: 'Diğer haberler'),
                   ),
@@ -1392,18 +1412,21 @@ class _Orta extends StatelessWidget {
 class _BolumBasligi extends StatelessWidget {
   const _BolumBasligi({
     required this.baslik,
-    this.renk = Tema.murekkep,
-    this.cizgiRengi = Tema.cizgi,
-    this.bagRengi = Tema.patina,
+    this.renk,
+    this.cizgiRengi,
+    this.bagRengi,
     this.slug,
     this.yol,
     this.oncu,
   });
 
   final String baslik;
-  final Color renk;
-  final Color cizgiRengi;
-  final Color bagRengi;
+
+  // Üçü de null olabilir: varsayılanları bağlamdan geliyor, çünkü
+  // temaya bağlı bir renk yapıcı parametresinde sabit olamıyor.
+  final Color? renk;
+  final Color? cizgiRengi;
+  final Color? bagRengi;
 
   /// Verilirse `/kategori/<slug>` bağlantısı çizilir.
   final String? slug;
@@ -1416,7 +1439,11 @@ class _BolumBasligi extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final r = Renkler.of(context);
     final hedef = yol ?? (slug == null ? null : '/kategori/$slug');
+    final baslikRengi = renk ?? r.murekkep;
+    final cizgi = cizgiRengi ?? r.cizgi;
+    final bag = bagRengi ?? r.patina;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -1430,12 +1457,12 @@ class _BolumBasligi extends StatelessWidget {
               fontSize: 11.5,
               fontWeight: FontWeight.w700,
               letterSpacing: 1.6,
-              color: renk,
+              color: baslikRengi,
             ),
           ),
         ),
         const SizedBox(width: 10),
-        Expanded(child: Container(height: 1, color: cizgiRengi)),
+        Expanded(child: Container(height: 1, color: cizgi)),
         if (hedef != null) ...[
           const SizedBox(width: 10),
           InkWell(
@@ -1448,7 +1475,7 @@ class _BolumBasligi extends StatelessWidget {
                   fontFamily: Tema.sans,
                   fontSize: 11.5,
                   fontWeight: FontWeight.w600,
-                  color: bagRengi,
+                  color: bag,
                 ),
               ),
             ),
@@ -1477,17 +1504,18 @@ class _MansetBlogu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final r = Renkler.of(context);
     final manset = kapak.manset!;
     if (genis) {
       return _Orta(
         child: ColoredBox(
-          color: Colors.white,
+          color: r.kart,
           child: IntrinsicHeight(
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Expanded(flex: 62, child: Manset(haber: manset, genis: true)),
-                Container(width: 1, color: Tema.cizgi),
+                Container(width: 1, color: r.cizgi),
                 Expanded(
                   flex: 38,
                   child: Column(
@@ -1508,7 +1536,7 @@ class _MansetBlogu extends StatelessWidget {
     final kalanIkincil = kapak.ikincil.skip(2).toList();
     return _Orta(
       child: ColoredBox(
-        color: Colors.white,
+        color: r.kart,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -1519,7 +1547,7 @@ class _MansetBlogu extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     for (var i = 0; i < ikili.length; i++) ...[
-                      if (i > 0) Container(width: 1, color: Tema.cizgi),
+                      if (i > 0) Container(width: 1, color: r.cizgi),
                       Expanded(child: _IkiliKart(haber: ikili[i])),
                     ],
                     // Tek kart kaldıysa yarım genişlikte kalsın; tam
@@ -1544,6 +1572,7 @@ class _IkiliKart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final r = Renkler.of(context);
     void git() {
       HapticFeedback.lightImpact();
       context.go('/haber/${haber.slug}');
@@ -1555,7 +1584,7 @@ class _IkiliKart extends StatelessWidget {
       excludeSemantics: true,
       onTap: git,
       child: Material(
-      color: Colors.white,
+      color: r.kart,
       child: InkWell(
         onTap: git,
         child: Padding(
@@ -1580,12 +1609,12 @@ class _IkiliKart extends StatelessWidget {
                 haber.baslik,
                 maxLines: 4,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: Tema.serif,
                   fontWeight: FontWeight.w600,
                   fontSize: 15.5,
                   height: 1.26,
-                  color: Tema.murekkep,
+                  color: r.murekkep,
                 ),
               ),
             ],
@@ -1608,15 +1637,16 @@ class _KisaKisa extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final r = Renkler.of(context);
     final genis = MediaQuery.sizeOf(context).width >= 860;
     return _Orta(
       child: Container(
-        color: Tema.sunk,
+        color: r.sunk,
         padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const _BolumBasligi(baslik: 'Kısa kısa', cizgiRengi: Tema.cizgiKuvvetli),
+            _BolumBasligi(baslik: 'Kısa kısa', cizgiRengi: r.cizgiKuvvetli),
             const SizedBox(height: 4),
             if (genis)
               // Geniş ekranda üç sütun: aynı yükseklikte üç katı başlık.
@@ -1652,6 +1682,7 @@ class _KisaSatir extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final r = Renkler.of(context);
     return Semantics(
       button: true,
       label: '${haber.baslik}. ${gecenSure(haber.zaman)}',
@@ -1659,8 +1690,8 @@ class _KisaSatir extends StatelessWidget {
       child: InkWell(
         onTap: () => context.go('/haber/${haber.slug}'),
         child: Container(
-          decoration: const BoxDecoration(
-            border: Border(bottom: BorderSide(color: Tema.sunkKoyu)),
+          decoration: BoxDecoration(
+            border: Border(bottom: BorderSide(color: r.sunkKoyu)),
           ),
           padding: const EdgeInsets.symmetric(vertical: 9),
           child: Row(
@@ -1670,11 +1701,11 @@ class _KisaSatir extends StatelessWidget {
                 width: 48,
                 child: Text(
                   saatDamgasi(haber.zaman),
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: Tema.sans,
                     fontSize: 11.5,
                     height: 1.45,
-                    color: Tema.solgun,
+                    color: r.solgun,
                   ),
                 ),
               ),
@@ -1684,12 +1715,12 @@ class _KisaSatir extends StatelessWidget {
                   haber.baslik,
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: Tema.serif,
                     fontWeight: FontWeight.w600,
                     fontSize: 15.5,
                     height: 1.3,
-                    color: Tema.murekkep,
+                    color: r.murekkep,
                   ),
                 ),
               ),
@@ -1713,24 +1744,25 @@ class _IlcemSeridi extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final r = Renkler.of(context);
     final ilcem = ref.watch(ilcemSaglayici);
     if (ilcem == null) return const SizedBox.shrink();
     return _Orta(
       child: Container(
-        color: Colors.white,
+        color: r.kart,
         padding: const EdgeInsets.fromLTRB(18, 18, 18, 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _BolumBasligi(
               baslik: 'İlçem · ${ilcem.ad}',
-              renk: Tema.bakir,
-              bagRengi: Tema.bakir,
+              renk: r.bakir,
+              bagRengi: r.bakir,
               yol: '/ilcem',
-              oncu: const Icon(
+              oncu: Icon(
                 Icons.location_on_outlined,
                 size: 15,
-                color: Tema.bakir,
+                color: r.bakir,
               ),
             ),
             const SizedBox(height: 2),
@@ -1764,9 +1796,10 @@ class _Izgara extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final r = Renkler.of(context);
     return _Orta(
       child: Container(
-        color: Colors.white,
+        color: r.kart,
         padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1800,6 +1833,7 @@ class _IzgaraKarti extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final r = Renkler.of(context);
     void git() {
       HapticFeedback.lightImpact();
       context.go('/haber/${haber.slug}');
@@ -1811,7 +1845,7 @@ class _IzgaraKarti extends StatelessWidget {
       excludeSemantics: true,
       onTap: git,
       child: Material(
-      color: Colors.white,
+      color: r.kart,
       child: InkWell(
         onTap: git,
         child: Column(
@@ -1833,12 +1867,12 @@ class _IzgaraKarti extends StatelessWidget {
               haber.baslik,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 fontFamily: Tema.serif,
                 fontWeight: FontWeight.w700,
                 fontSize: 18,
                 height: 1.22,
-                color: Tema.murekkep,
+                color: r.murekkep,
               ),
             ),
             if ((haber.spot ?? '').isNotEmpty) ...[
@@ -1847,11 +1881,11 @@ class _IzgaraKarti extends StatelessWidget {
                 haber.spot!,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
+                style: TextStyle(
                   fontFamily: Tema.serif,
                   fontSize: 15,
                   height: 1.45,
-                  color: Tema.murekkepIkincil,
+                  color: r.murekkepIkincil,
                 ),
               ),
             ],
@@ -1876,19 +1910,20 @@ class _KoyuKusak extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final r = Renkler.of(context);
     final genis = MediaQuery.sizeOf(context).width >= 860;
     return _Orta(
       child: Container(
-        color: Tema.murekkep,
+        color: r.kusak,
         padding: const EdgeInsets.fromLTRB(18, 18, 18, 20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _BolumBasligi(
               baslik: 'Asayiş ve kaza',
-              renk: Colors.white,
+              renk: r.kusakMetin,
               cizgiRengi: Colors.white24,
-              bagRengi: const Color(0xFFD7C9A8),
+              bagRengi: r.kusakIkincil,
               slug: 'asayis',
             ),
             const SizedBox(height: 4),
@@ -1931,6 +1966,7 @@ class _KusakSatiri extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final r = Renkler.of(context);
     return Semantics(
       button: true,
       label: '${haber.baslik}. $_yer, ${gecenSure(haber.zaman)}',
@@ -1951,14 +1987,14 @@ class _KusakSatiri extends StatelessWidget {
                   _yer,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: Tema.sans,
                     fontSize: 10.5,
                     height: 1.5,
                     letterSpacing: 0.6,
                     fontWeight: FontWeight.w600,
-                    // Kâğıt zemindeki bakırın koyu zemindeki karşılığı.
-                    color: Color(0xFFC9B99A),
+                    // Kâğıt zemindeki bakırın kuşak üstündeki karşılığı.
+                    color: r.kusakIkincil,
                   ),
                 ),
               ),
@@ -1968,12 +2004,14 @@ class _KusakSatiri extends StatelessWidget {
                   haber.baslik,
                   maxLines: 3,
                   overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: Tema.serif,
                     fontWeight: FontWeight.w600,
                     fontSize: 15.5,
                     height: 1.3,
-                    color: Tema.zemin,
+                    // Kuşağın kendi metin rengi. `zemin` yazılsaydı koyu
+                    // temada kuşak zemininin üstüne yine koyu düşerdi.
+                    color: r.kusakMetin,
                   ),
                 ),
               ),
@@ -1996,20 +2034,101 @@ class _Gozden extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final r = Renkler.of(context);
     return _Orta(
       child: Container(
-        color: Tema.sunk,
+        color: r.sunk,
         padding: const EdgeInsets.fromLTRB(18, 18, 18, 12),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const _BolumBasligi(
+            _BolumBasligi(
               baslik: 'Gözden kaçmasın',
-              cizgiRengi: Tema.cizgiKuvvetli,
+              cizgiRengi: r.cizgiKuvvetli,
             ),
             const SizedBox(height: 2),
-            for (final h in haberler) Satir(haber: h, zemin: Tema.sunk),
+            for (final h in haberler) Satir(haber: h, zemin: r.sunk),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Tema seçici — alt künyede.
+///
+/// Yerel haber akşam okunuyor ve sıcak kâğıt zemini gece telefonda gözü
+/// yoruyor. Varsayılan "Sistem": telefonun karanlık moda geçmesi okurun
+/// zaten verdiği bir karar, portalın onu yok sayması için sebep yok.
+///
+/// Punto seçici gibi burası da bir okuma ayarı; seçim cihazda duruyor,
+/// sunucuya gitmiyor.
+class _TemaSecici extends ConsumerWidget {
+  const _TemaSecici();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final r = Renkler.of(context);
+    final secili = ref.watch(temaKipiSaglayici);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(Icons.brightness_6_outlined, size: 15, color: r.solgun),
+        const SizedBox(width: 8),
+        Text(
+          'Görünüm',
+          style: TextStyle(
+            fontFamily: Tema.sans,
+            fontSize: 12.5,
+            color: r.solgun,
+          ),
+        ),
+        const SizedBox(width: 12),
+        for (final kipi in TemaKipi.values) ...[
+          if (kipi != TemaKipi.values.first) const SizedBox(width: 6),
+          _TemaDugmesi(kipi: kipi, secili: kipi == secili),
+        ],
+      ],
+    );
+  }
+}
+
+class _TemaDugmesi extends ConsumerWidget {
+  const _TemaDugmesi({required this.kipi, required this.secili});
+
+  final TemaKipi kipi;
+  final bool secili;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final r = Renkler.of(context);
+    return Semantics(
+      button: true,
+      selected: secili,
+      label: 'Görünüm: ${kipi.ad}',
+      excludeSemantics: true,
+      child: InkWell(
+        onTap: () => ref.read(temaKipiSaglayici.notifier).sec(kipi),
+        child: Container(
+          // Dokunma hedefi 44 pikselin altına inmiyor.
+          constraints: const BoxConstraints(minHeight: 44),
+          alignment: Alignment.center,
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          decoration: BoxDecoration(
+            color: secili ? r.patina : r.kart,
+            border: Border.all(
+              color: secili ? r.patina : r.cizgiKuvvetli,
+            ),
+          ),
+          child: Text(
+            kipi.ad,
+            style: TextStyle(
+              fontFamily: Tema.sans,
+              fontSize: 12.5,
+              fontWeight: secili ? FontWeight.w600 : FontWeight.w400,
+              color: secili ? r.patinaUstu : r.murekkep,
+            ),
+          ),
         ),
       ),
     );

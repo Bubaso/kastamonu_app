@@ -62,8 +62,9 @@ class _Basi extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final r = Renkler.of(context);
     return Container(
-      color: Tema.sunk,
+      color: r.sunk,
       child: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1080),
@@ -74,16 +75,16 @@ class _Basi extends ConsumerWidget {
                 Expanded(
                   child: Text(
                     '$adet haber kayıtlı',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontFamily: Tema.sans,
                       fontSize: 13.5,
-                      color: Tema.solgun,
+                      color: r.solgun,
                     ),
                   ),
                 ),
                 TextButton(
                   onPressed: () => _hepsiniSil(context, ref),
-                  style: TextButton.styleFrom(foregroundColor: Tema.solgun),
+                  style: TextButton.styleFrom(foregroundColor: r.solgun),
                   child: const Text(
                     'Tümünü kaldır',
                     style: TextStyle(fontFamily: Tema.sans, fontSize: 13.5),
@@ -99,41 +100,42 @@ class _Basi extends ConsumerWidget {
 
   /// Geri alınamayan bir işlem; onay soruluyor.
   Future<void> _hepsiniSil(BuildContext context, WidgetRef ref) async {
+    final r = Renkler.of(context);
     final onay = await showDialog<bool>(
       context: context,
       builder: (c) => AlertDialog(
-        backgroundColor: Tema.zemin,
+        backgroundColor: r.zemin,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(2)),
         ),
-        title: const Text(
+        title: Text(
           'Kayıtlar kaldırılsın mı?',
           style: TextStyle(
             fontFamily: Tema.serif,
             fontWeight: FontWeight.w700,
             fontSize: 20,
-            color: Tema.murekkep,
+            color: r.murekkep,
           ),
         ),
         content: Text(
           '$adet haber listeden çıkacak. Haberler silinmiyor, yalnızca '
           'senin kayıt listenden kalkıyor.',
-          style: const TextStyle(
+          style: TextStyle(
             fontFamily: Tema.sans,
             fontSize: 14.5,
             height: 1.5,
-            color: Tema.murekkepIkincil,
+            color: r.murekkepIkincil,
           ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(c, false),
-            style: TextButton.styleFrom(foregroundColor: Tema.solgun),
+            style: TextButton.styleFrom(foregroundColor: r.solgun),
             child: const Text('Vazgeç'),
           ),
           TextButton(
             onPressed: () => Navigator.pop(c, true),
-            style: TextButton.styleFrom(foregroundColor: Tema.sonDakika),
+            style: TextButton.styleFrom(foregroundColor: r.uyari),
             child: const Text('Kaldır'),
           ),
         ],
