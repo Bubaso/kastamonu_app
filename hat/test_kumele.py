@@ -45,7 +45,7 @@ class Yer(unittest.TestCase):
 
 class Kumeleme(unittest.TestCase):
     def test_olculen_gercek_cift_birlesiyor(self):
-        """Ölçümde yakalanan Daday yangını — benzerlik 0,85."""
+        """Ölçümde yakalanan Daday yangını — benzerlik 0,75."""
         a = k("1", "Daday'ın Bolatlar köyünde çıkan yangında samanlık "
                    "kullanılamaz hale geldi", kaynak="Sondakika", ilceler=["daday"])
         b = k("2", "Daday'ın Bolatlar köyünde çıkan yangında Yaşar Mıcık'a ait "

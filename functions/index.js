@@ -140,6 +140,12 @@ async function supabase(yol) {
   return yanit.json();
 }
 
+// Aynı olayı anlatan kayıtlar listede bir kez görünsün. Kural Dart
+// tarafında da var ama orası ancak Flutter açıldıktan sonra çalışıyor;
+// SSR kendi sorgusunu atıyor ve ölçümde ana sayfa aynı Daday yangınını
+// iki kez listeliyordu.
+import { tekille } from "./tekille.js";
+
 const SECIM =
   "id,slug,baslik,spot,govde,kaynak_adi,kaynak_url,yayinci,gorsel_url," +
   "gorsel_kaynak,olusturuldu,yayinlandi,kategoriler(ad,slug)," +
@@ -280,11 +286,15 @@ export const kategoriRender = onRequest({ region: BOLGE }, async (req, res) => {
     const k = kategoriler[0];
     if (!k) return yanitla(res, kabuk());
 
-    const haberler = await supabase(
+    // Kırpma, kategori süzgecinden SONRA: önce kırpılsaydı bölümün
+    // haberleri, başka bölümlerin daha yeni haberleri yüzünden listeden
+    // düşerdi.
+    const haberler = tekille(await supabase(
       `haberler?durum=eq.yayinda&select=${encodeURIComponent(SECIM)}` +
-      `&order=yayinlandi.desc&limit=30`);
-    const liste = haberler.filter(
-      (h) => h.kategoriler && h.kategoriler.slug === slug);
+      `&order=yayinlandi.desc&limit=200`));
+    const liste = haberler
+      .filter((h) => h.kategoriler && h.kategoriler.slug === slug)
+      .slice(0, 30);
 
     const adres = `${TABAN}/kategori/${k.slug}`;
     const meta = metaBlogu({
@@ -348,8 +358,13 @@ export const anasayfaRender = onRequest({ region: BOLGE }, async (req, res) => {
 export const sitemap = onRequest({ region: BOLGE }, async (req, res) => {
   try {
     const [haberler, kategoriler] = await Promise.all([
-      supabase("haberler?durum=eq.yayinda&select=slug,yayinlandi,olusturuldu" +
-               "&order=yayinlandi.desc&limit=2000"),
+      // Tekilleştirme için ilçe, kategori ve başlık da gerekiyor:
+      // iki neredeyse aynı adres arama motoruna tekrarlayan içerik
+      // sinyali veriyor.
+      supabase("haberler?durum=eq.yayinda&select=" + encodeURIComponent(
+        "id,slug,baslik,govde,gorsel_url,gorsel_kaynak,yayinlandi," +
+        "olusturuldu,kategoriler(ad),haber_ilce(onaylandi,ilceler(ad))") +
+        "&order=yayinlandi.desc&limit=2000"),
       supabase("kategoriler?select=slug&order=sira"),
     ]);
 
@@ -363,7 +378,7 @@ export const sitemap = onRequest({ region: BOLGE }, async (req, res) => {
       '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
       girdi("/"),
       ...kategoriler.map((k) => girdi(`/kategori/${k.slug}`)),
-      ...haberler.map((h) =>
+      ...tekille(haberler).map((h) =>
         girdi(`/haber/${h.slug}`, h.yayinlandi || h.olusturuldu)),
       "</urlset>",
     ].join("\n");

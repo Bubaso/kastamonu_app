@@ -114,7 +114,7 @@ PENCERE = timedelta(days=7)
 #:
 #: DİKKAT — bu sayı ölçülmüş değil. Yayındaki 60 kayıtla 0,50 · 0,55 ·
 #: 0,62 · 0,70 denendi, dördü de birebir aynı sonucu verdi: gerçek
-#: tekrar 0,85'te, tekrar olmayan en yakın çift 0,45'te, arada geniş bir
+#: tekrar 0,75'te, tekrar olmayan en yakın çift 0,45'te, arada geniş bir
 #: ölü bölge var. Kaynak sayısı artınca `ADAY_ESIGI` ile toplanan
 #: etiketli veriden yeniden ölçülmeli.
 ESIK = 0.62
