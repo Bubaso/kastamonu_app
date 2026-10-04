@@ -31,14 +31,25 @@ olgulardan yeniden yazılıyor. Künyede kümedeki bütün kaynaklar anılıyor.
 | Dosya | Ne |
 | --- | --- |
 | `kumele.py` | Kümeleme. Bağımlılığı yok. |
-| `sentez.py` | Metin yazımı ve denetimi. `anthropic` + `pydantic`. |
+| `sentez.py` | Metin yazımı ve denetimi. Sağlayıcıyı bilmiyor. |
+| `gemini.py` | Sentezin Gemini uygulaması. |
 | `dene.py` | Yayındaki veriyle koşturur, hiçbir şey yazmaz. |
 | `test_*.py` | 30 test. Model anahtarı gerekmiyor. |
 
 ```bash
-python3 -m unittest discover -s hat -t .   # testler
+python3 -m unittest discover -s hat -t .   # testler, anahtarsız
 python3 -m hat.dene                        # gerçek veriyle kümeleme
+python3 -m hat.dene --sentez               # metni de yazdırır
 ```
+
+Sentez için:
+
+```bash
+export GEMINI_API_KEY=...
+```
+
+Anahtar **gizli** — Supabase anon anahtarının aksine depoya, kaynağa ya
+da tarayıcıya girmez. Yalnız hattın koştuğu makinede durur.
 
 ## Kararlar
 
@@ -63,8 +74,24 @@ haftalarca ayrı yayımlanabiliyor; ölçülen çiftte fark 12,5 gündü.
 öbürü "5 yaralı" diyorsa sentez seçim yapmıyor; `celiskiler` alanına
 yazıp haberi editöre düşürüyor.
 
-**Model çağrısı dışarıdan veriliyor.** `istek()` ve `dogrula()` saf
-işlevler; testler anahtarsız koşuyor.
+**Model çağrısı dışarıdan veriliyor.** `sentez.py` hangi sağlayıcıyı
+kullandığımızı bilmiyor; bir çağırıcı alıyor. Sağlayıcı değişince yalnız
+`gemini.py`nin eşi yazılıyor. `istek()` ve `dogrula()` saf işlevler;
+31 testin hepsi anahtarsız koşuyor.
+
+**Kopyalama ölçülüyor, umut edilmiyor.** Yönerge "kaynak cümlelerini
+kopyalama" diyor ama modelin söylediğine güvenmiyoruz: `dogrula()`
+sentez ile her kaynak arasındaki en uzun birebir ortak parçayı ölçüyor
+ve 100 karakteri geçerse haberi reddediyor.
+
+Cümle benzerliği ölçüt olarak denendi ve YANILTICI çıktı: ölçülen Daday
+haberinde bir sentez cümlesi kaynağa %90 benziyordu, sebebi adresti —
+"Kastamonu'nun Daday ilçesine bağlı Bolatlar köyü Dere Mahallesi'nde".
+Aynı metinde en uzun birebir ortak parça 31 karakterdi.
+
+**Çelişki alanı liste, sözlük değil.** `dict[str, str]` JSON şemasında
+`additionalProperties` üretiyor ve Gemini'nin geliştirici API'si onu
+reddediyor.
 
 ## Eşik ölçülmedi
 

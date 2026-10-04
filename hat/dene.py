@@ -3,8 +3,12 @@
     python3 -m hat.dene
 
 Okuma amaçlı: anon anahtarla yalnız yayındaki haberleri çekiyor,
-hiçbir şey yazmıyor. Sentez için model anahtarı gerekiyor, bu betik
-onu çağırmıyor — kümelemenin ne ürettiğini göstermek için.
+veritabanına hiçbir şey yazmıyor.
+
+    python3 -m hat.dene --sentez
+
+da verilirse birleşen olaylar için metin de yazdırılıyor. Bunun için
+`GEMINI_API_KEY` gerekiyor ve her olay bir model çağrısı demek.
 """
 
 from __future__ import annotations
@@ -64,7 +68,10 @@ def getir() -> list[Kayit]:
     return kayitlar
 
 
-def main() -> None:
+def main(argv: list[str] | None = None) -> None:
+    import sys
+
+    sentezle = "--sentez" in (argv if argv is not None else sys.argv[1:])
     kayitlar = getir()
     olaylar, adaylar = kumele(kayitlar)
     coklu = [o for o in olaylar if len(o) > 1]
@@ -98,6 +105,33 @@ def main() -> None:
             print(f"  Olgu metni: en iyi tek kayıt {tek} karakter → birleşik "
                   f"{toplam} ({toplam/tek:.1f}×)")
             print(f"  Kaynakların birbirini tamamladığı alan: {ek}/{len(birlesik)}")
+
+    if sentezle and coklu:
+        from .gemini import MODEL, cagirici
+        from .sentez import DenetimHatasi, durum, yaz
+
+        cagir = cagirici()
+        print(f"\n{'═'*66}\nSENTEZ  ({MODEL})")
+        for o in coklu:
+            print(f"\n  Kaynaklar: {', '.join(o.kaynaklar)}")
+            try:
+                s = yaz(o, cagir)
+            except DenetimHatasi as e:
+                print(f"  ✗ denetimden geçmedi: {e}")
+                continue
+            print(f"  Durum   : {durum(s)}")
+            print(f"  BAŞLIK  : {s.baslik}")
+            print(f"  SPOT    : {s.spot}")
+            print(f"  GÖVDE   :")
+            for par in s.govde.split("\n"):
+                if par.strip():
+                    print(f"            {par.strip()}")
+            print(f"  KÜNYE   : {', '.join(s.kullanilan_kaynaklar)}")
+            if s.celiskiler:
+                print("  ÇELİŞKİ :")
+                for c in s.celiskiler:
+                    degerler = ", ".join(f"{x.kaynak}: {x.deger}" for x in c.degerler)
+                    print(f"            {c.konu} → {degerler}")
 
     if adaylar:
         print(f"\n{'─'*66}\nEDİTÖRE SORULACAK ÇİFTLER")
