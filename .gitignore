@@ -44,3 +44,7 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 .env.panel
+
+# Fonksiyon bağımlılıkları. Kilit dosyası neyin kurulacağını zaten
+# sabitliyor; dizinin kendisi depoda durmuyor (bkz. README, Dağıtım).
+functions/node_modules/
