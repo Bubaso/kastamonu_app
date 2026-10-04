@@ -65,6 +65,12 @@ dosyada açık yazılı; özeti:
 
 Son satır kuralı bir kez işlemez hale getirmişti; ayrıntısı dosyada.
 
+**Asıl çözüm yazıldı:** `hat/` dizinindeki Python modülü aynı olayın
+kayıtlarını silmek yerine kümeliyor ve havuzlanmış olgulardan portalın
+kendi metnini yazdırıyor. Ölçülen kazanç, Daday yangınında olgu metninin
+358'den 600 karaktere çıkması. Hatta taşınmak üzere yazıldı; ayrıntısı
+`hat/BENIOKU.md` içinde.
+
 Hangi kaydın kalacağı okurun o bilgiyi nerede gördüğüne göre: gerçek
 fotoğraf, sonra belirgin şekilde uzun başlık (akışta görünen tek şey o),
 sonra gövde uzunluğu, eşitlikte önce derlenen.
