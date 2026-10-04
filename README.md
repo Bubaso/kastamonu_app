@@ -166,6 +166,13 @@ sürecine yükletiyor; bir paket yerelde eksikse dağıtım o analiz adımında
 `Cannot find package` diye düşüyor. Google tarafındaki kurulum bunu
 kurtarmıyor, çünkü analiz ondan önce geliyor.
 
+`functions/node_modules` depoda tutulmuyor; neyin kurulacağını
+`functions/package-lock.json` sabitliyor. Betik her dağıtımda kuruyor,
+elle gerektiğinde `npm ci --prefix functions`. Dizinin depoda durduğu
+dönemde 74 MB'lık 5733 dosyaydı ve içinde platforma özgü derlenmiş
+ikililer vardı — `sharp`ın Linux kitaplıkları macOS'taki bir geliştiriciye
+hiçbir işe yaramadan iniyordu.
+
 ## Kararlar
 
 Aşağıdakiler üslup tercihi değil; her birinin gerekçesi ilgili dosyanın
