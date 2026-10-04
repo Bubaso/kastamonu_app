@@ -9,7 +9,8 @@ import unittest
 from datetime import datetime, timedelta, timezone
 
 from .kumele import Kayit, Olay
-from .sentez import Celiski, DenetimHatasi, Sentez, dogrula, durum, istek, yaz
+from .sentez import (Celiski, DenetimHatasi, KaynakDeger, Sentez, dogrula,
+                     durum, istek, yaz)
 
 T0 = datetime(2026, 9, 20, 10, 0, tzinfo=timezone.utc)
 
@@ -85,8 +86,9 @@ class Dogrula(unittest.TestCase):
     def test_celiskide_yabanci_kaynak_reddedilir(self):
         with self.assertRaises(DenetimHatasi):
             dogrula(
-                self.iyi(celiskiler=[Celiski(konu="saat",
-                                             degerler={"Hürriyet": "14.00"})]),
+                self.iyi(celiskiler=[Celiski(
+                    konu="saat",
+                    degerler=[KaynakDeger(kaynak="Hürriyet", deger="14.00")])]),
                 olay_kur(),
             )
 
@@ -99,51 +101,81 @@ class Durum(unittest.TestCase):
     def test_celiskili_editore_duser(self):
         """Çelişkili haber sessizce yayına çıkmamalı."""
         s = Sentez(baslik="a", spot="b", govde="c", kullanilan_kaynaklar=["x"],
-                   celiskiler=[Celiski(konu="yaralı sayısı",
-                                       degerler={"A": "3", "B": "5"})])
+                   celiskiler=[Celiski(
+                       konu="yaralı sayısı",
+                       degerler=[KaynakDeger(kaynak="A", deger="3"),
+                                 KaynakDeger(kaynak="B", deger="5")])])
         self.assertEqual(durum(s), "celiskili")
 
 
-class SahteIstemci:
-    """`messages.parse` taklidi."""
-
-    def __init__(self, sonuc, stop_reason="end_turn"):
-        self._s, self._r = sonuc, stop_reason
-        self.cagrildi = None
-        self.messages = self
-
-    def parse(self, **kw):
-        self.cagrildi = kw
-        return type("Y", (), {"parsed_output": self._s, "stop_reason": self._r})()
-
-
 class Yaz(unittest.TestCase):
+    """Çağırıcı sahte; anahtar gerekmiyor."""
+
+    def cagirici(self, sonuc):
+        kayit = {}
+
+        def cagir(yonerge, istek):
+            kayit["yonerge"], kayit["istek"] = yonerge, istek
+            return sonuc
+
+        return cagir, kayit
+
     def test_denetimden_gecen_doner(self):
         s = Sentez(baslik="a", spot="b", govde="c",
                    kullanilan_kaynaklar=["Haberler.com / Kastamonu"])
-        self.assertIs(yaz(olay_kur(), SahteIstemci(s)), s)
+        cagir, _ = self.cagirici(s)
+        self.assertIs(yaz(olay_kur(), cagir), s)
 
     def test_denetimden_gecmeyen_yukselir(self):
         s = Sentez(baslik="a", spot="b", govde="c",
                    kullanilan_kaynaklar=["Uydurma Gazete"])
+        cagir, _ = self.cagirici(s)
         with self.assertRaises(DenetimHatasi):
-            yaz(olay_kur(), SahteIstemci(s))
+            yaz(olay_kur(), cagir)
 
-    def test_red_yakalaniyor(self):
-        """Güvenlik sınıflandırıcısı reddederse içerik okunmamalı."""
-        s = Sentez(baslik="a", spot="b", govde="c", kullanilan_kaynaklar=["x"])
-        with self.assertRaises(DenetimHatasi) as e:
-            yaz(olay_kur(), SahteIstemci(s, stop_reason="refusal"))
-        self.assertIn("reddetti", str(e.exception))
-
-    def test_yonerge_gonderiliyor(self):
+    def test_yonerge_ve_istek_gidiyor(self):
         s = Sentez(baslik="a", spot="b", govde="c",
                    kullanilan_kaynaklar=["Haberler.com / Kastamonu"])
-        i = SahteIstemci(s)
-        yaz(olay_kur(), i)
-        self.assertIn("KOPYALAMA", i.cagrildi["system"])
-        self.assertEqual(i.cagrildi["output_format"], Sentez)
+        cagir, kayit = self.cagirici(s)
+        yaz(olay_kur(), cagir)
+        self.assertIn("KOPYALAMA", kayit["yonerge"])
+        self.assertIn("jandarma", kayit["istek"])
 
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Kopya(unittest.TestCase):
+    """Kaynak metnin birebir taşınması yayına çıkmamalı."""
+
+    def iyi(self, govde):
+        return Sentez(
+            baslik="Daday'da samanlık yangını", spot="Kısa özet.",
+            govde=govde,
+            kullanilan_kaynaklar=["Sondakika.com / Kastamonu"],
+        )
+
+    def olay_govdeli(self):
+        o = olay_kur()
+        o.uyeler[0].govde = (
+            "Kastamonu'nun Daday ilçesine bağlı Bolatlar köyü Dere "
+            "Mahallesi'nde bir samanlıkta henüz bilinmeyen bir nedenle "
+            "yangın çıktı ve alevler kısa sürede yayıldı."
+        )
+        return o
+
+    def test_birebir_kopya_reddedilir(self):
+        o = self.olay_govdeli()
+        with self.assertRaises(DenetimHatasi) as e:
+            dogrula(self.iyi(o.uyeler[0].govde), o)
+        self.assertIn("birebir", str(e.exception))
+
+    def test_adres_ortakligi_gecer(self):
+        """Ölçülen gerçek durum: adres paylaşılıyor ama metin özgün."""
+        o = self.olay_govdeli()
+        dogrula(self.iyi(
+            "Daday ilçesine bağlı Bolatlar köyünde bir yangın meydana "
+            "geldi. Alevler kısa sürede yapıyı sardı. Ekipler müdahale "
+            "ederek söndürdü."
+        ), o)

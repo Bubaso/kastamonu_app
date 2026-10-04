@@ -12,34 +12,45 @@ olgulardan yeniden yazıldığı için.
 
 Model çağrısı dışarıdan veriliyor
 ─────────────────────────────────
-`yaz()` bir istemci alıyor; almazsa kendi kuruyor. Böylece prompt
-kurulumu ve çıktı denetimi anahtar olmadan test edilebiliyor —
+Bu dosya hangi sağlayıcıyı kullandığımızı BİLMİYOR. `yaz()` bir çağırıcı
+alıyor: yönergeyi ve isteği alıp [Sentez] döndüren herhangi bir işlev.
+Gemini uygulaması `gemini.py` içinde.
+
+Böylece iki şey oluyor: sağlayıcı değişince bu dosya değişmiyor, ve
+prompt kurulumu ile çıktı denetimi anahtarsız test edilebiliyor —
 `istek()` ve `dogrula()` saf işlevler.
 """
 
 from __future__ import annotations
 
+import difflib
 import json
-from typing import Any, Protocol
+from collections.abc import Callable
+from typing import Any
 
 from pydantic import BaseModel, Field
 
 from .kumele import Olay
 
-#: Varsayılan model. Sentez haber metni yazıyor; ucuzlatmak sizin
-#: kararınız, `yaz(model=...)` ile değiştirin.
-MODEL = "claude-opus-5-5"
-
-
 # ── Çıktı biçimi ─────────────────────────────────────────────────
 
+class KaynakDeger(BaseModel):
+    """Bir kaynağın bir ayrıntı için verdiği değer."""
+
+    kaynak: str
+    deger: str
+
+
 class Celiski(BaseModel):
-    """Kaynakların aynı şey için farklı değer verdiği yer."""
+    """Kaynakların aynı şey için farklı değer verdiği yer.
+
+    `degerler` neden serbest sözlük (`dict[str, str]`) değil: sözlük
+    JSON şemasında `additionalProperties` üretiyor ve Gemini'nin
+    geliştirici API'si onu reddediyor. Liste her sağlayıcıda çalışıyor.
+    """
 
     konu: str = Field(description="Neyin çeliştiği, örn. 'yaralı sayısı'")
-    degerler: dict[str, str] = Field(
-        description="Kaynak adı -> o kaynağın verdiği değer"
-    )
+    degerler: list[KaynakDeger]
 
 
 class Sentez(BaseModel):
@@ -107,6 +118,26 @@ class DenetimHatasi(Exception):
     """Çıktı sözleşmeyi tutmuyor."""
 
 
+#: Sentez ile kaynak metin arasında kabul edilebilir en uzun birebir
+#: ortak parça, karakter.
+#:
+#: Cümle benzerliği ölçüt olarak YANILTICI: ölçülen Daday haberinde bir
+#: sentez cümlesi kaynaktakine %90 benziyordu, ama sebebi adresti —
+#: "Kastamonu'nun Daday ilçesine bağlı Bolatlar köyü Dere Mahallesi'nde".
+#: Adresi başka türlü yazmanın anlamı yok ve telife de konu değil.
+#:
+#: Birebir ortak parça bu tuzağa düşmüyor: aynı ölçümde en uzun ortak
+#: parça 31 karakterdi (çoğu paragraf boşluğu). Kopyalanmış bir cümle
+#: 80-200 karakter sürer. Eşik ikisinin arasına, güvenli tarafa konuyor.
+KOPYA_ESIGI = 100
+
+
+def en_uzun_ortak(a: str, b: str) -> tuple[int, str]:
+    """İki metnin paylaştığı en uzun birebir parça."""
+    e = difflib.SequenceMatcher(None, a, b).find_longest_match(0, len(a), 0, len(b))
+    return e.size, a[e.a : e.a + e.size]
+
+
 def dogrula(s: Sentez, olay: Olay) -> None:
     """Çıktıyı yayına uygun mu diye denetler.
 
@@ -128,8 +159,18 @@ def dogrula(s: Sentez, olay: Olay) -> None:
     if not s.kullanilan_kaynaklar:
         raise DenetimHatasi("hiçbir kaynak gösterilmemiş")
 
+    # Kaynak cümlesi kopyalanmış mı. Yönergede yazıyor ama modelin
+    # söylediğine güvenmiyoruz; ölçüyoruz.
+    for k in olay.uyeler:
+        boy, parca = en_uzun_ortak(s.govde, k.govde or "")
+        if boy >= KOPYA_ESIGI:
+            raise DenetimHatasi(
+                f"{k.kaynak_adi} kaynağından {boy} karakterlik birebir "
+                f"parça taşınmış: “{parca[:60]}…”"
+            )
+
     for c in s.celiskiler:
-        yabanci = [k for k in c.degerler if k not in kumedekiler]
+        yabanci = [d.kaynak for d in c.degerler if d.kaynak not in kumedekiler]
         if yabanci:
             raise DenetimHatasi(
                 f"çelişkide kümede olmayan kaynak: {', '.join(yabanci)}"
@@ -146,40 +187,19 @@ def durum(s: Sentez) -> str:
 
 # ── Model çağrısı ────────────────────────────────────────────────
 
-class Istemci(Protocol):
-    """`anthropic.Anthropic` bu biçimi karşılıyor."""
+#: Yönergeyi ve isteği alıp [Sentez] döndüren işlev.
+#:
+#: Sağlayıcıya bağımlı tek nokta bu. `gemini.py` bir tane üretiyor;
+#: testler sahte bir tane veriyor.
+Cagirici = Callable[[str, str], Sentez]
 
-    messages: Any
 
-
-def yaz(
-    olay: Olay,
-    istemci: Istemci | None = None,
-    model: str = MODEL,
-) -> Sentez:
+def yaz(olay: Olay, cagir: Cagirici) -> Sentez:
     """Kümeden tek haber metni üretir ve denetler.
 
     Denetimden geçmezse [DenetimHatasi] yükseliyor — çağıran kaydı
-    editöre düşürüyor, yayına değil.
+    editöre düşürüyor, yayına değil. Modelin söylediğine güvenmiyoruz.
     """
-    if istemci is None:
-        import anthropic
-
-        istemci = anthropic.Anthropic()
-
-    yanit = istemci.messages.parse(
-        model=model,
-        max_tokens=16000,
-        system=YONERGE,
-        messages=[{"role": "user", "content": istek(olay)}],
-        output_format=Sentez,
-    )
-
-    # Güvenlik sınıflandırıcısı isteği reddedebiliyor; `content` okunmadan
-    # önce bakılması gereken yer burası.
-    if getattr(yanit, "stop_reason", None) == "refusal":
-        raise DenetimHatasi("model isteği reddetti")
-
-    s = yanit.parsed_output
+    s = cagir(YONERGE, istek(olay))
     dogrula(s, olay)
     return s
