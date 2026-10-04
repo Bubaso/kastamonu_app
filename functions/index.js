@@ -324,9 +324,11 @@ export const kategoriRender = onRequest({ region: BOLGE }, async (req, res) => {
 
 export const anasayfaRender = onRequest({ region: BOLGE }, async (req, res) => {
   try {
-    const haberler = await supabase(
+    // Tekilleştirme eleyeceği için fazladan çekiliyor; ana sayfa yine
+    // 30 haber listeliyor.
+    const haberler = tekille(await supabase(
       `haberler?durum=eq.yayinda&select=${encodeURIComponent(SECIM)}` +
-      `&order=yayinlandi.desc&limit=30`);
+      `&order=yayinlandi.desc&limit=45`)).slice(0, 30);
 
     const meta = metaBlogu({
       baslik: SITE_ADI,
