@@ -48,3 +48,7 @@ app.*.map.json
 # Fonksiyon bağımlılıkları. Kilit dosyası neyin kurulacağını zaten
 # sabitliyor; dizinin kendisi depoda durmuyor (bkz. README, Dağıtım).
 functions/node_modules/
+
+# Python
+__pycache__/
+*.pyc
