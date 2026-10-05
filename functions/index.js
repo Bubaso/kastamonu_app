@@ -46,6 +46,21 @@ const SITE_ACIKLAMA =
 // değişkeni verilecek.
 const TABAN = process.env.SITE_TABAN || "https://kastamonuhaber-68645.web.app";
 
+/** Paylaşım kartı — ana sayfa ve kategori sayfaları için.
+ *
+ * Neden sabit bir görsel
+ * ──────────────────────
+ * Eskiden bu sayfalar `haberler[0].gorsel_url` kullanıyordu, yani o an
+ * en yeni haberin fotoğrafını. Sonucu ölçüldü: site bağlantısı
+ * WhatsApp'ta bir CENAZE haberinin fotoğrafıyla çıkıyordu. Sayfanın
+ * kendisi o haber değil; rastgele bir habere ait fotoğraf hem alakasız
+ * hem de denetimsiz — paylaşan kişi ne çıkacağını bilmiyor.
+ *
+ * Haber sayfaları kendi fotoğraflarını kullanmayı sürdürüyor: orada
+ * görsel haberin KENDİSİNE ait ve doğru olan o.
+ */
+const PAYLASIM_KARTI = `${TABAN}/paylasim.png`;
+
 const SUPABASE_URL =
   process.env.SUPABASE_URL || "https://vcwgcvzqdnjyoitdfhma.supabase.co";
 // Anon anahtar yayımlanmak üzere tasarlandı; RLS'i tek başına aşamıyor ve
@@ -172,7 +187,13 @@ function metaBlogu({ baslik, aciklama, adres, gorsel, tur = "website", tarih }) 
       // vermesini sağlıyor; önizleme daha hızlı çiziliyor.
       `  <meta property="og:image:width" content="1200">`,
       `  <meta property="og:image:height" content="630">`,
-      `  <meta property="og:image:type" content="image/jpeg">`,
+      // Tür ADRESTEN türetiliyor, sabit değil: marka kartı PNG,
+      // haber görselleri JPEG. Yanlış tür bildirmek önizlemeyi
+      // düşürebiliyor.
+      `  <meta property="og:image:type" content="${
+        /\.png(\?|$)/i.test(gorsel) ? "image/png"
+          : /\.webp(\?|$)/i.test(gorsel) ? "image/webp"
+          : "image/jpeg"}">`,
       `  <meta property="og:image:alt" content="${kacir(baslik)}">`,
       `  <meta name="twitter:card" content="summary_large_image">`,
       `  <meta name="twitter:image" content="${kacir(gorsel)}">`);
@@ -301,7 +322,10 @@ export const kategoriRender = onRequest({ region: BOLGE }, async (req, res) => {
       baslik: `${k.ad} haberleri | ${SITE_ADI}`,
       aciklama: `Kastamonu ${k.ad.toLowerCase()} haberleri. ${SITE_ACIKLAMA}`,
       adres,
-      gorsel: liste[0]?.gorsel_url,
+      // Kategori sayfası da marka kartını kullanıyor: o an en yeni
+      // haberin fotoğrafı sayfanın kendisini anlatmıyor ve paylaşan
+      // kişi ne çıkacağını bilmiyor.
+      gorsel: PAYLASIM_KARTI,
     });
 
     const govde = [
@@ -334,7 +358,7 @@ export const anasayfaRender = onRequest({ region: BOLGE }, async (req, res) => {
       baslik: SITE_ADI,
       aciklama: SITE_ACIKLAMA,
       adres: TABAN,
-      gorsel: haberler[0]?.gorsel_url,
+      gorsel: PAYLASIM_KARTI,
     });
 
     // Ana sayfa artık haber LİSTESİ basmıyor.
