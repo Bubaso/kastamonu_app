@@ -25,6 +25,15 @@ import 'anasayfa_deposu.dart';
 ///
 /// Buradaki düzen aynı haberleri katlara dağıtıyor. Haber sayısı artmıyor,
 /// hiyerarşi geliyor.
+/// Anasayfadaki bir bölüm katı: başlık + o bölümün haberleri.
+class BolumKati {
+  const BolumKati({required this.ad, required this.slug, required this.haberler});
+
+  final String ad;
+  final String? slug;
+  final List<Haber> haberler;
+}
+
 class Kapak {
   /// Lider haber. Liste boşsa null.
   final Haber? manset;
@@ -50,8 +59,16 @@ class Kapak {
   /// Önemi yüksek ama birkaç günlük.
   final List<Haber> gozden;
 
-  /// Hiçbir kata girmeyenler. Akış olarak sayfanın sonunda.
-  final List<Haber> kalan;
+  /// Katlara girmeyenler, BÖLÜME göre gruplanmış hâlde.
+  ///
+  /// Eskiden burası "Diğer haberler" başlıklı tek bir akıştı ve sayfanın
+  /// sonunda tren gibi uzuyordu: aynı puntoda, aynı satırda, aynı küçük
+  /// görselle onlarca haber. Haber sayısı arttıkça üst kısım donuyor,
+  /// kuyruk uzuyordu.
+  ///
+  /// Artık her haber bir bölümün altına giriyor. "Diğer" diye bir yer
+  /// yok; kategorisi olmayan haber de kendi adıyla anılıyor.
+  final List<BolumKati> bolumler;
 
   const Kapak({
     required this.manset,
@@ -62,7 +79,7 @@ class Kapak {
     required this.asayis,
     required this.secme,
     required this.gozden,
-    required this.kalan,
+    required this.bolumler,
   });
 
   static const bos = Kapak(
@@ -74,7 +91,7 @@ class Kapak {
     asayis: [],
     secme: [],
     gozden: [],
-    kalan: [],
+    bolumler: [],
   );
 
   // ── Kat sınırları ────────────────────────────────────────────
@@ -228,7 +245,23 @@ class Kapak {
       sira: (a, b) => b.onem.compareTo(a.onem),
     );
 
-    final kalan = tumu.where((h) => !alinan.contains(h.id)).toList();
+    // Katlara girmeyenler bölüme göre gruplanıyor. Tek bir "Diğer
+    // haberler" akışı yok: her haber kendi bölümünün altında, ızgara
+    // kartı olarak duruyor.
+    final artan = tumu.where((h) => !alinan.contains(h.id)).toList();
+    final gruplar = <String, List<Haber>>{};
+    final sluglar = <String, String?>{};
+    for (final h in artan) {
+      final ad = (h.kategoriAd ?? '').trim().isEmpty ? 'Kastamonu' : h.kategoriAd!;
+      gruplar.putIfAbsent(ad, () => []).add(h);
+      sluglar[ad] = h.kategoriSlug;
+    }
+    final bolumler = gruplar.entries
+        .map((e) => BolumKati(ad: e.key, slug: sluglar[e.key], haberler: e.value))
+        // Kalabalık bölüm önce: okur en çok haberin olduğu yerde daha
+        // uzun kalıyor ve sayfa yukarıdan aşağı seyrelerek bitiyor.
+        .toList()
+      ..sort((a, b) => b.haberler.length.compareTo(a.haberler.length));
 
     return Kapak(
       manset: manset,
@@ -239,7 +272,7 @@ class Kapak {
       asayis: asayis,
       secme: secme,
       gozden: gozden,
-      kalan: kalan,
+      bolumler: bolumler,
     );
   }
 

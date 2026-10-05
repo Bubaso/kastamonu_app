@@ -7,7 +7,9 @@ import {
 
 const T = (saat) => new Date(Date.parse("2026-10-05T08:00:00Z") + saat * 36e5).toISOString();
 const k = (baslik, o = {}) => ({
-  baslik, ozet: o.ozet ?? "", adres: o.adres ?? "", 
+  baslik, ozet: o.ozet ?? "", adres: o.adres ?? "",
+  // Görsel varsayılan olarak dolu: görselsizlik ayrı bir testin konusu.
+  gorsel: o.gorsel ?? "https://foto.example/x.jpg",
   kaynak_adi: o.kaynak ?? "A", olusturuldu: T(o.saat ?? 0),
 });
 
@@ -145,4 +147,32 @@ test("çevrilemeyen künye olduğu gibi kalıyor ve reddediliyor", async () => {
   const d = kunyeyiDuzelt({ kullanilan_kaynaklar: ["Hürriyet"] }, olay);
   assert.deepEqual(d.kullanilan_kaynaklar, ["Hürriyet"]);
   assert.throws(() => dogrula({ ...iyi(), ...d }, olay), DenetimHatasi);
+});
+
+
+test("görselsiz küme modele gönderilmiyor", async () => {
+  // "Görselsiz haber kesinlikle olmayacak" bir ürün kararı; kural
+  // kodda, umutta değil.
+  let cagrildi = 0;
+  const sonuc = await kos({
+    tara: async () => ({ kayitlar: [{ ...olay.uyeler[0], gorsel: "" }], hatalar: [] }),
+    cagir: async () => { cagrildi++; return iyi(); },
+  });
+  assert.equal(cagrildi, 0);
+  assert.equal(sonuc.atlanan[0].sebep, "görsel yok");
+});
+
+test("kümede tek üyenin görseli varsa yetiyor", async () => {
+  const sonuc = await kos({
+    tara: async () => ({
+      kayitlar: [
+        { ...olay.uyeler[0], gorsel: "" },
+        { ...olay.uyeler[0], kaynak_adi: "B", gorsel: "https://foto.example/y.jpg",
+          olusturuldu: T(1) },
+      ],
+      hatalar: [],
+    }),
+    cagir: async () => iyi({ kullanilan_kaynaklar: ["İhlas"] }),
+  });
+  assert.equal(sonuc.yazilan.length, 1);
 });

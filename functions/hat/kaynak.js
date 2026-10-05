@@ -58,14 +58,28 @@ export function ogeler(xml) {
 // ── Kaynaklar ────────────────────────────────────────────────────
 
 /** Tek bir ham kayıt. `tekille.js` ve sentez bu biçimi bekliyor. */
-function kayit({ baslik, ozet, adres, yayin, tarih }) {
+function kayit({ baslik, ozet, adres, yayin, tarih, gorsel }) {
   return {
     baslik: temizle(baslik),
     ozet: temizle(ozet),
     adres: temizle(adres),
+    gorsel: temizle(gorsel),
     kaynak_adi: yayin,
     olusturuldu: tarih ? new Date(tarih).toISOString() : new Date().toISOString(),
   };
+}
+
+/** RSS öğesindeki görsel adresi.
+ *
+ * Beslemeler görseli üç ayrı etiketten biriyle veriyor; üçü de
+ * aranıyor. Haber sayfasını ayrıca çekip og:image okumaya gerek
+ * kalmıyor — ölçümde Haberler.com ve Kastamonu İstiklal ikisi de
+ * görseli doğrudan beslemede taşıyordu.
+ */
+export function gorselBul(parca) {
+  const m = String(parca ?? "").match(
+    /<(?:enclosure|media:content|media:thumbnail)[^>]*(?:url|href)=["']([^"']+)["']/i);
+  return m ? m[1] : "";
 }
 
 /** Standart RSS: başlık + gerçek özet + doğrudan adres.
@@ -77,6 +91,7 @@ export function rssOku(xml, yayin) {
     baslik: etiket(o, "title"),
     ozet: etiket(o, "description"),
     adres: etiket(o, "link"),
+    gorsel: gorselBul(o),
     yayin,
     tarih: temizle(etiket(o, "pubDate")),
   })).filter((h) => h.baslik);

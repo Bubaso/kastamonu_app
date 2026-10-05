@@ -51,7 +51,7 @@ List<String> _katlar(Kapak k, String id) => [
       if (k.asayis.any((h) => h.id == id)) 'asayis',
       if (k.secme.any((h) => h.id == id)) 'secme',
       if (k.gozden.any((h) => h.id == id)) 'gozden',
-      if (k.kalan.any((h) => h.id == id)) 'kalan',
+      if (k.bolumler.any((b) => b.haberler.any((h) => h.id == id))) 'bolum',
     ];
 
 void main() {
@@ -149,7 +149,7 @@ void main() {
           k.asayis.length +
           k.secme.length +
           k.gozden.length +
-          k.kalan.length;
+          k.bolumler.fold<int>(0, (t, b) => t + b.haberler.length);
       expect(toplam, liste.length);
     });
 
@@ -243,11 +243,37 @@ void main() {
       }
     });
 
+    test('hiçbir haber "Diğer" başlığı altında kalmıyor', () {
+      // Eskiden katlara girmeyenler tek bir "Diğer haberler" akışına
+      // düşüyordu ve sayfanın sonunda tren gibi uzuyordu.
+      final liste = List.generate(
+        40,
+        (i) => _h(onem: 3 + i % 5, id: 'h$i'),
+      );
+      final k = Kapak.kur(liste, simdi: _simdi);
+      for (final b in k.bolumler) {
+        expect(b.ad, isNot(contains('Diğer')));
+        expect(b.ad.trim(), isNotEmpty);
+        expect(b.haberler, isNotEmpty);
+      }
+    });
+
+    test('bölümler kalabalıktan seyreğe sıralı', () {
+      final liste = List.generate(40, (i) => _h(onem: 4, id: 'h$i'));
+      final k = Kapak.kur(liste, simdi: _simdi);
+      for (var i = 1; i < k.bolumler.length; i++) {
+        expect(
+          k.bolumler[i - 1].haberler.length,
+          greaterThanOrEqualTo(k.bolumler[i].haberler.length),
+        );
+      }
+    });
+
     test('boş liste düzeni düşürmüyor', () {
       final k = Kapak.kur(const [], simdi: _simdi);
       expect(k.bosMu, isTrue);
       expect(k.manset, isNull);
-      expect(k.kalan, isEmpty);
+      expect(k.bolumler, isEmpty);
     });
 
     test('tek haber yalnızca manşete gidiyor', () {
