@@ -46,6 +46,21 @@ const SITE_ACIKLAMA =
 // değişkeni verilecek.
 const TABAN = process.env.SITE_TABAN || "https://kastamonuhaber-68645.web.app";
 
+/** Paylaşım kartı — ana sayfa ve kategori sayfaları için.
+ *
+ * Neden sabit bir görsel
+ * ──────────────────────
+ * Eskiden bu sayfalar `haberler[0].gorsel_url` kullanıyordu, yani o an
+ * en yeni haberin fotoğrafını. Sonucu ölçüldü: site bağlantısı
+ * WhatsApp'ta bir CENAZE haberinin fotoğrafıyla çıkıyordu. Sayfanın
+ * kendisi o haber değil; rastgele bir habere ait fotoğraf hem alakasız
+ * hem de denetimsiz — paylaşan kişi ne çıkacağını bilmiyor.
+ *
+ * Haber sayfaları kendi fotoğraflarını kullanmayı sürdürüyor: orada
+ * görsel haberin KENDİSİNE ait ve doğru olan o.
+ */
+const PAYLASIM_KARTI = `${TABAN}/paylasim.png`;
+
 const SUPABASE_URL =
   process.env.SUPABASE_URL || "https://vcwgcvzqdnjyoitdfhma.supabase.co";
 // Anon anahtar yayımlanmak üzere tasarlandı; RLS'i tek başına aşamıyor ve
@@ -172,7 +187,13 @@ function metaBlogu({ baslik, aciklama, adres, gorsel, tur = "website", tarih }) 
       // vermesini sağlıyor; önizleme daha hızlı çiziliyor.
       `  <meta property="og:image:width" content="1200">`,
       `  <meta property="og:image:height" content="630">`,
-      `  <meta property="og:image:type" content="image/jpeg">`,
+      // Tür ADRESTEN türetiliyor, sabit değil: marka kartı PNG,
+      // haber görselleri JPEG. Yanlış tür bildirmek önizlemeyi
+      // düşürebiliyor.
+      `  <meta property="og:image:type" content="${
+        /\.png(\?|$)/i.test(gorsel) ? "image/png"
+          : /\.webp(\?|$)/i.test(gorsel) ? "image/webp"
+          : "image/jpeg"}">`,
       `  <meta property="og:image:alt" content="${kacir(baslik)}">`,
       `  <meta name="twitter:card" content="summary_large_image">`,
       `  <meta name="twitter:image" content="${kacir(gorsel)}">`);
@@ -301,7 +322,10 @@ export const kategoriRender = onRequest({ region: BOLGE }, async (req, res) => {
       baslik: `${k.ad} haberleri | ${SITE_ADI}`,
       aciklama: `Kastamonu ${k.ad.toLowerCase()} haberleri. ${SITE_ACIKLAMA}`,
       adres,
-      gorsel: liste[0]?.gorsel_url,
+      // Kategori sayfası da marka kartını kullanıyor: o an en yeni
+      // haberin fotoğrafı sayfanın kendisini anlatmıyor ve paylaşan
+      // kişi ne çıkacağını bilmiyor.
+      gorsel: PAYLASIM_KARTI,
     });
 
     const govde = [
@@ -334,7 +358,7 @@ export const anasayfaRender = onRequest({ region: BOLGE }, async (req, res) => {
       baslik: SITE_ADI,
       aciklama: SITE_ACIKLAMA,
       adres: TABAN,
-      gorsel: haberler[0]?.gorsel_url,
+      gorsel: PAYLASIM_KARTI,
     });
 
     // Ana sayfa artık haber LİSTESİ basmıyor.
@@ -602,3 +626,84 @@ export const hatKos = onRequest(
       res.status(500).json({ hata: String(hata?.message ?? hata).slice(0, 300) });
     }
   });
+
+// ─── Hava durumu ──────────────────────────────────────────────────────
+
+/** Kastamonu ve ilçelerinin hava durumu.
+ *
+ * Yanıt CDN'de yarım saat duruyor: ziyaretçi sayısı ne olursa olsun
+ * yukarı akışa ilçe başına saatte iki istek gidiyor. `stale-while-
+ * revalidate` ile süre dolduğunda okur beklemiyor, eski yanıtı alıyor
+ * ve yenisi arkada tazeleniyor.
+ */
+export const hava = onRequest({ region: BOLGE }, async (req, res) => {
+  try {
+    const { havaCek } = await import("./hava.js");
+    const ilce = String(req.query.ilce ?? "Merkez");
+    const veri = await havaCek(ilce);
+    res.set("Cache-Control", "public, max-age=1800, s-maxage=1800, " +
+      "stale-while-revalidate=3600");
+    res.set("Content-Type", "application/json; charset=utf-8");
+    res.status(200).send(JSON.stringify(veri));
+  } catch (hata) {
+    console.error("hava", hata);
+    // Hava durumu sayfanın yardımcı öğesi: düştüğünde şerit çizilmiyor,
+    // sayfa çalışmaya devam ediyor. Kısa önbellek, sağlayıcı
+    // toparladığında okurun uzun süre şeritsiz kalmaması için.
+    res.set("Cache-Control", "public, max-age=120");
+    res.status(502).json({ hata: "hava durumu alınamadı" });
+  }
+});
+
+// ─── Döviz ────────────────────────────────────────────────────────────
+
+/** TCMB kurları.
+ *
+ * TCMB günde bir kez (~15:30) ve yalnız iş günleri yayımlıyor, yani
+ * yarım saatlik önbellek yeni bülteni geciktirmiyor. Yanıttaki `tarih`
+ * bültenin tarihi; arayüz onu göstermek zorunda, çünkü hafta sonu ve
+ * pazartesi sabahı gelen sayı önceki iş gününe ait.
+ */
+export const doviz = onRequest({ region: BOLGE }, async (req, res) => {
+  try {
+    const { dovizCek } = await import("./doviz.js");
+    const veri = await dovizCek();
+    if (!veri.kurlar.length) throw new Error("bültenden kur okunamadı");
+    res.set("Cache-Control", "public, max-age=1800, s-maxage=1800, " +
+      "stale-while-revalidate=7200");
+    res.set("Content-Type", "application/json; charset=utf-8");
+    res.status(200).send(JSON.stringify(veri));
+  } catch (hata) {
+    console.error("doviz", hata);
+    res.set("Cache-Control", "public, max-age=120");
+    res.status(502).json({ hata: "kurlar alınamadı" });
+  }
+});
+
+// ─── Nöbetçi eczaneler ────────────────────────────────────────────────
+
+/** Bugünün nöbetçi eczaneleri.
+ *
+ * Önbellek KISA (10 dakika): nöbet günlük değişiyor ve okur gece
+ * yarısından sonra eski listeyi görmemeli. `guncel` yanlışsa liste
+ * zaten boş geliyor; o durumda önbellek daha da kısa tutuluyor ki oda
+ * sayfayı güncellediğinde okur beklemesin.
+ */
+export const eczane = onRequest({ region: BOLGE }, async (req, res) => {
+  try {
+    const { eczaneCek } = await import("./eczane.js");
+    const veri = await eczaneCek();
+    res.set(
+      "Cache-Control",
+      veri.guncel
+        ? "public, max-age=600, s-maxage=600, stale-while-revalidate=1800"
+        : "public, max-age=120",
+    );
+    res.set("Content-Type", "application/json; charset=utf-8");
+    res.status(200).send(JSON.stringify(veri));
+  } catch (hata) {
+    console.error("eczane", hata);
+    res.set("Cache-Control", "public, max-age=120");
+    res.status(502).json({ hata: "nöbetçi eczane listesi alınamadı" });
+  }
+});

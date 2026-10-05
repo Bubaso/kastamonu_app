@@ -54,6 +54,27 @@
         }
       },
       {
+        "source": "/api/hava",
+        "function": {
+          "functionId": "hava",
+          "region": "europe-west1"
+        }
+      },
+      {
+        "source": "/api/doviz",
+        "function": {
+          "functionId": "doviz",
+          "region": "europe-west1"
+        }
+      },
+      {
+        "source": "/api/eczane",
+        "function": {
+          "functionId": "eczane",
+          "region": "europe-west1"
+        }
+      },
+      {
         "source": "**",
         "destination": "/app.html"
       }
