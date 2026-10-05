@@ -353,5 +353,59 @@ void main() {
       expect(tekille(const []), isEmpty);
       expect(tekille([_dadayA()]), hasLength(1));
     });
+
+    // ── Eşik: canlı veriden ölçülen gerçek çiftler ────────────────
+    //
+    // Bu dört çift veritabanında GERÇEKTEN yan yana duruyordu ve eski
+    // eşik (0,62) dördünün üçünü kaçırıyordu; okur aynı haberi iki kez
+    // görüyordu. Sunucu tarafındaki ikiz testler
+    // `functions/tekille.test.js` içinde — iki eşik ayrışırsa
+    // sunucunun gizlediği kayıt uygulamada görünür.
+
+    test('aynı olayın iki ayrı sentezi yakalanıyor', () {
+      expect(
+        ayniOlay(
+          _h(baslik: "Cide'de balık tutarken kalp krizi geçiren kişi hayatını kaybetti",
+              kategori: 'Kaza ve Acil', ilceler: const ['Cide']),
+          _h(baslik: "Cide'de denizde kalp krizi geçiren balıkçı hayatını kaybetti",
+              kategori: 'Kaza ve Acil', ilceler: const ['Cide'],
+              yas: const Duration(hours: 3)),
+        ),
+        isTrue,
+      );
+    });
+
+    test('kurt saldırısı ve maç tekrarları yakalanıyor', () {
+      expect(
+        ayniOlay(
+          _h(baslik: 'Kastamonu Hacımuharrem köyünde ahıra giren kurtlar 18 koyunu telef etti',
+              kategori: 'Tarım'),
+          _h(baslik: "Kastamonu'da ağıla saldıran kurtlar 18 koyunu telef etti",
+              kategori: 'Tarım', yas: const Duration(hours: 4)),
+        ),
+        isTrue,
+      );
+      expect(
+        ayniOlay(
+          _h(baslik: "GMG Kastamonuspor, evinde Arnavutköy Belediyesi'ni 2-1 mağlup etti",
+              kategori: 'Spor'),
+          _h(baslik: "GMG Kastamonuspor evinde Arnavutköy Belediyespor'u 2-1 yendi",
+              kategori: 'Spor', yas: const Duration(hours: 6)),
+        ),
+        isTrue,
+      );
+    });
+
+    test('kalıplı başlıklı AYRI olaylar birleşmiyor', () {
+      // Eşiğin neden daha aşağı inmediğinin gerekçesi: Türkçe haber
+      // dili kalıplı, "son yolculuğuna uğurlanacak" tek başına
+      // benzerlik üretiyor. Canlı veride bu çift 0,30 ölçüldü.
+      final a = _h(baslik: 'Pakize Dikoğlu son yolculuğuna uğurlanacak', kategori: 'Gündem');
+      final b = _h(baslik: 'İş yerinde ölü bulunan Dilruba Arslan son yolculuğuna uğurlanacak',
+          kategori: 'Gündem', yas: const Duration(hours: 5));
+      expect(baslikBenzerligi(a.baslik, b.baslik), lessThan(0.40));
+      expect(ayniOlay(a, b), isFalse,
+          reason: 'iki ayrı cenaze tek habere indirgenemez');
+    });
   });
 }

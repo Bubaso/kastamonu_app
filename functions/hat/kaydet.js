@@ -94,6 +94,36 @@ export function yazici({ taban = null, anahtar = null, fetchIsl = fetch } = {}) 
       return new Set(kumeler.flat());
     },
 
+    /** Son [gun] gün içinde kaydedilmiş haberler.
+     *
+     * Tekilleştirmenin ikinci katmanı için. Birincisi adres eşitliği
+     * (`varMi`) ve aynı olay BAŞKA adresten geldiğinde onu
+     * yakalayamıyor: ölçümde "Cide'de balık tutarken kalp krizi
+     * geçiren kişi" yayındayken hat "Cide'de denizde kalp krizi
+     * geçiren balıkçı" diye ikinci bir kayıt üretti — aynı olay, iki
+     * haber, ikisi de okura görünüyordu.
+     *
+     * Seçim `tekille.ayniOlay`in beklediği biçimde: başlık, derleme
+     * anı, bölüm ve onaylı ilçe bağları.
+     */
+    async sonKayitlar(gun = 7) {
+      const esik = new Date(Date.now() - gun * 864e5).toISOString();
+      // İlçe bağı ÇEKİLMİYOR: çağıran ilçeyi başlık metninden
+      // türetiyor. Bağ ayrı bir süreçle doluyor ve seyrek (ölçümde 81
+      // kaydın 18'i), dolayısıyla karşılaştırmada kullanılamıyor.
+      const sec = "id,baslik,olusturuldu,kategoriler(ad)";
+      const y = await fetchIsl(
+        `${taban}/rest/v1/haberler?select=${encodeURIComponent(sec)}` +
+        `&olusturuldu=gte.${encodeURIComponent(esik)}&limit=500`,
+        { headers: bas });
+      if (!y.ok) {
+        throw new DenetimHatasi(
+          `son kayıtlar okunamadı: ${y.status}. Tekilleştirmenin ikinci ` +
+          "katmanı çalışmadan yazmak aynı olayı iki kez yayımlar.");
+      }
+      return y.json();
+    },
+
     /** Kategori adlarını kimliklere çevirir. */
     async kategoriler() {
       const y = await fetchIsl(`${taban}/rest/v1/kategoriler?select=id,ad`,
