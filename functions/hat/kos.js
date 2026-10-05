@@ -96,6 +96,8 @@ ARALARINDA SEÇİM YAPMA: metinde belirsiz bırak, çelişkiyi celiskiler \
 alanına yaz.
 5. Elindeki bilgi bir haber metni yazmaya yetmiyorsa govde alanını boş \
 bırak; uydurarak doldurma.
+6. kullanilan_kaynaklar alanına kayıtlardaki "kaynak" değerlerini BİREBİR \
+yaz — yayın adını, adresi değil.
 
 Üslup: Türkçe, haber dili, sade. Başlık tek cümle. Spot iki cümleyi \
 geçmesin.`;
@@ -126,6 +128,23 @@ function enUzunOrtak(a, b) {
 }
 
 /** Çıktıyı yayına uygun mu diye denetler. Modelin sözüne güvenmiyoruz. */
+/** Künyeyi kümedeki yayın adlarına oturtur.
+ *
+ * Ölçümde model künye alanına yayın adı yerine ADRES yazdı ve iki
+ * geçerli haber "uydurulmuş kaynak" diye reddedildi. Adres kümede
+ * gerçekten var olan bir kaydı işaret ediyorsa bu uydurma değil, alan
+ * karışıklığı: yayın adına çevriliyor.
+ *
+ * Çevrilemeyen değer olduğu gibi bırakılıyor; [dogrula] onu reddediyor.
+ */
+export function kunyeyiDuzelt(s, olay) {
+  const adresten = new Map(
+    olay.uyeler.filter((h) => h.adres).map((h) => [h.adres, h.kaynak_adi]));
+  const duzeltilmis = (s.kullanilan_kaynaklar ?? [])
+    .map((k) => adresten.get(k) ?? k);
+  return { ...s, kullanilan_kaynaklar: [...new Set(duzeltilmis)] };
+}
+
 export function dogrula(s, olay) {
   if (!s?.baslik?.trim()) throw new DenetimHatasi("başlık boş");
   if (!s?.govde?.trim()) throw new DenetimHatasi("gövde boş");
@@ -233,7 +252,7 @@ export async function kos({
       continue;
     }
     try {
-      const s = await cagir(o);
+      const s = kunyeyiDuzelt(await cagir(o), o);
       dogrula(s, o);
       yazilan.push({ sentez: s, olay: o, durum: durum(s) });
     } catch (e) {
