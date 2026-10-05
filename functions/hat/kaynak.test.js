@@ -132,3 +132,26 @@ test("govdeDoldur: çekim düşerse kayıt bozulmuyor", async () => {
   const d = await govdeDoldur(kayit, async () => { throw new Error("503"); });
   assert.equal(d.ozet, "RSS özeti");
 });
+
+import { tazeMi, yerelMi } from "./kaynak.js";
+
+test("yerellik: ulusal dolgu eleniyor", () => {
+  // Yerel gazetelerin beslemesi bunları da taşıyor; şehir portalının
+  // haberi değiller.
+  assert.equal(yerelMi({ baslik: "SGK'dan emeklilere 81 ilde indirim müjdesi", ozet: "" }), false);
+  assert.equal(yerelMi({ baslik: "Konut kredisinde yeni faiz oranları belli oldu", ozet: "" }), false);
+});
+
+test("yerellik: Kastamonu ve ilçeler geçiyor", () => {
+  assert.ok(yerelMi({ baslik: "Kastamonu'da kaza", ozet: "" }));
+  assert.ok(yerelMi({ baslik: "Taşköprü'de sarımsak hasadı", ozet: "" }));
+  assert.ok(yerelMi({ baslik: "Şelale ziyaretçi ağırlıyor", ozet: "Araç ilçesinde bulunan şelale" }));
+});
+
+test("tazelik: eski haber eleniyor", () => {
+  const simdi = Date.parse("2026-10-05T12:00:00Z");
+  assert.ok(tazeMi({ olusturuldu: "2026-10-03T12:00:00Z" }, 7, simdi));
+  // Ölçümde altı ay önceki 23 Nisan haberi gelmişti.
+  assert.equal(tazeMi({ olusturuldu: "2026-04-23T12:00:00Z" }, 7, simdi), false);
+  assert.equal(tazeMi({ olusturuldu: "bozuk" }, 7, simdi), false);
+});
