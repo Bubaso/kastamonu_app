@@ -128,3 +128,21 @@ test("bir olay düşse koşu devam ediyor", async () => {
   assert.equal(sonuc.yazilan.length, 1);
   assert.equal(sonuc.atlanan.length, 1);
 });
+
+test("künyeye adres yazılırsa yayın adına çevriliyor", async () => {
+  // Ölçümde model künyeye adres yazdı ve geçerli haberler reddedildi.
+  const { kunyeyiDuzelt } = await import("./kos.js");
+  const o = {
+    capa: k("x"),
+    uyeler: [k("x", { kaynak: "Haberler.com / Kastamonu", adres: "https://h.com/a" })],
+  };
+  const d = kunyeyiDuzelt({ kullanilan_kaynaklar: ["https://h.com/a"] }, o);
+  assert.deepEqual(d.kullanilan_kaynaklar, ["Haberler.com / Kastamonu"]);
+});
+
+test("çevrilemeyen künye olduğu gibi kalıyor ve reddediliyor", async () => {
+  const { kunyeyiDuzelt } = await import("./kos.js");
+  const d = kunyeyiDuzelt({ kullanilan_kaynaklar: ["Hürriyet"] }, olay);
+  assert.deepEqual(d.kullanilan_kaynaklar, ["Hürriyet"]);
+  assert.throws(() => dogrula({ ...iyi(), ...d }, olay), DenetimHatasi);
+});
