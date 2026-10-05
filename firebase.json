@@ -61,6 +61,13 @@
         }
       },
       {
+        "source": "/api/doviz",
+        "function": {
+          "functionId": "doviz",
+          "region": "europe-west1"
+        }
+      },
+      {
         "source": "**",
         "destination": "/app.html"
       }

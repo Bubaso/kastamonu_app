@@ -3,34 +3,45 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
 import '../../../cekirdek/tema.dart';
-import '../veri/hava.dart';
+import '../../doviz/veri/doviz.dart';
+import '../../hava/veri/hava.dart';
 
-/// Bölüm çubuğunun altındaki hava şeridi.
+/// Bölüm çubuğunun altındaki bilgi şeridi: hava ve döviz.
 ///
 /// Neden şerit, neden kart değil
 /// ─────────────────────────────
-/// Hava bakılıp geçilen bir bilgi. Kart olsaydı manşetin yanında yer
-/// kaplar ve haberle yarışırdı; şerit başlığın devamı gibi duruyor,
+/// İkisi de bakılıp geçilen bilgi. Kart olsalardı manşetin yanında yer
+/// kaplar ve haberle yarışırlardı; şerit başlığın devamı gibi duruyor,
 /// göz haberin üstünden geçerken yolda okuyor.
 ///
-/// Şerit yalnız veri VARSA çiziliyor. Sağlayıcı düştüğünde,
-/// `HAVA_TABANI` verilmediğinde (yerel geliştirme) ya da sıcaklık
-/// gelmediğinde hiç görünmüyor — hata kutusu da, boş yer tutucu da yok.
-/// Hava durumu sayfanın yardımcı öğesi; yokluğu sayfayı bozmamalı.
-class HavaSeridi extends ConsumerWidget {
-  const HavaSeridi({super.key});
+/// Sıra: hava özeti, döviz, sonra tahmin günleri. Döviz tahminden
+/// ÖNCE, çünkü dar ekranda şerit yatay kayıyor ve döviz kaydırmadan
+/// görünmesi gereken şey; yedinci günün tahmini değil.
+///
+/// Her parça yalnız kendi verisi VARSA çiziliyor; ikisi de yoksa şerit
+/// hiç görünmüyor. Sağlayıcı düştüğünde, taban verilmediğinde (yerel
+/// geliştirme) ya da veri eksikken hata kutusu da, boş yer tutucu da
+/// yok. Bunlar sayfanın yardımcı öğeleri; yoklukları sayfayı bozmamalı.
+class BilgiSeridi extends ConsumerWidget {
+  const BilgiSeridi({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final hava = ref.watch(havaSaglayici).asData?.value;
-    if (hava == null) return const SliverToBoxAdapter(child: SizedBox.shrink());
-    return SliverToBoxAdapter(child: _Serit(hava: hava));
+    final doviz = ref.watch(dovizSaglayici).asData?.value;
+    if (hava == null && doviz == null) {
+      return const SliverToBoxAdapter(child: SizedBox.shrink());
+    }
+    return SliverToBoxAdapter(
+      child: _Serit(hava: hava, doviz: doviz),
+    );
   }
 }
 
 class _Serit extends StatelessWidget {
-  const _Serit({required this.hava});
-  final Hava hava;
+  const _Serit({required this.hava, required this.doviz});
+  final Hava? hava;
+  final Doviz? doviz;
 
   @override
   Widget build(BuildContext context) {
@@ -51,20 +62,27 @@ class _Serit extends StatelessWidget {
           child: SizedBox(
             width: double.infinity,
             child: Semantics(
-              label: _etiket(hava),
+              label: _etiket(hava, doviz),
               excludeSemantics: true,
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
-                    _Simdi(hava: hava, genis: genis),
-                    const SizedBox(width: 18),
+                    if (hava != null) ...[
+                      _Simdi(hava: hava!, genis: genis),
+                      const SizedBox(width: 18),
+                    ],
+                    if (doviz != null) ...[
+                      _Doviz(doviz: doviz!),
+                      const SizedBox(width: 18),
+                    ],
                     // Bugün zaten solda; tahmin yarından başlıyor.
-                    for (final g in hava.gunler.skip(1))
-                      Padding(
-                        padding: const EdgeInsets.only(right: 16),
-                        child: _Gun(gun: g),
-                      ),
+                    if (hava != null)
+                      for (final g in hava!.gunler.skip(1))
+                        Padding(
+                          padding: const EdgeInsets.only(right: 16),
+                          child: _Gun(gun: g),
+                        ),
                   ],
                 ),
               ),
@@ -121,6 +139,66 @@ class _Simdi extends StatelessWidget {
                   ? 'rüzgar ${s.ruzgar} km/s'
                   : '${s.ruzgarYonu} ${s.ruzgar} km/s',
             ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Kur parçası: kod + satış, yanında bülten tarihi.
+///
+/// Tarih ZORUNLU: TCMB yalnız iş günleri yayımlıyor, hafta sonu ve
+/// pazartesi sabahı gösterilen sayı önceki iş gününe ait. Tarihsiz kur
+/// okura "şu an böyle" der ve yanlıştır.
+class _Doviz extends StatelessWidget {
+  const _Doviz({required this.doviz});
+  final Doviz doviz;
+
+  @override
+  Widget build(BuildContext context) {
+    final r = Renkler.of(context);
+    final bicim = NumberFormat('#,##0.00', 'tr');
+    return Row(
+      children: [
+        Container(width: 1, height: 20, color: r.cizgi),
+        const SizedBox(width: 16),
+        // Tarih kurlardan ÖNCE. Ölçüldü: 390 pikselde üç kur ekranı
+        // dolduruyor ve sona konan tarih ekran dışında kalıyordu —
+        // yani telefonda okur tarihsiz kur görüyordu, ki tam olarak
+        // kaçınmak istediğimiz şey o.
+        Text(
+          'TCMB ${DateFormat('d MMM', 'tr').format(doviz.tarih!)}',
+          style: TextStyle(
+            fontFamily: Tema.sans,
+            fontSize: 11,
+            color: r.solgun,
+          ),
+        ),
+        const SizedBox(width: 12),
+        for (final k in doviz.kurlar) ...[
+          Text.rich(
+            TextSpan(
+              children: [
+                TextSpan(
+                  text: '${k.kod} ',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: .5,
+                    color: r.solgun,
+                  ),
+                ),
+                TextSpan(
+                  text: bicim.format(k.satis),
+                  style: TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: r.murekkep,
+                  ),
+                ),
+              ],
+            ),
+            style: TextStyle(fontFamily: Tema.sans, fontSize: 13, height: 1),
+          ),
+          const SizedBox(width: 12),
         ],
       ],
     );
@@ -227,18 +305,31 @@ String gunAdi(DateTime t, {DateTime? simdi}) {
 /// Ekran okuyucu için tek cümle.
 ///
 /// Şeridin kendisi onlarca küçük metin; ayrı ayrı okunması gürültü.
-String _etiket(Hava hava) {
-  final s = hava.simdi;
-  final parcalar = <String>[
-    '${hava.ilce} hava durumu',
-    '${s.sicaklik} derece',
-    if (s.ad != '—') s.ad,
-    if (s.nem != null) 'nem yüzde ${s.nem}',
-    if (s.ruzgar != null)
-      s.ruzgarYonu == null
-          ? 'rüzgar saatte ${s.ruzgar} kilometre'
-          : '${s.ruzgarYonu} yönünden saatte ${s.ruzgar} kilometre rüzgar',
-    if (hava.gunler.length > 1) '${hava.gunler.length} günlük tahmin',
-  ];
+String _etiket(Hava? hava, Doviz? doviz) {
+  final parcalar = <String>[];
+
+  if (hava != null) {
+    final s = hava.simdi;
+    parcalar.addAll([
+      '${hava.ilce} hava durumu',
+      '${s.sicaklik} derece',
+      if (s.ad != '—') s.ad,
+      if (s.nem != null) 'nem yüzde ${s.nem}',
+      if (s.ruzgar != null)
+        s.ruzgarYonu == null
+            ? 'rüzgar saatte ${s.ruzgar} kilometre'
+            : '${s.ruzgarYonu} yönünden saatte ${s.ruzgar} kilometre rüzgar',
+      if (hava.gunler.length > 1) '${hava.gunler.length} günlük tahmin',
+    ]);
+  }
+
+  if (doviz != null) {
+    final bicim = NumberFormat('#,##0.00', 'tr');
+    parcalar.add(
+      'TCMB ${DateFormat('d MMMM', 'tr').format(doviz.tarih!)} kurları: '
+      '${doviz.kurlar.map((k) => '${k.ad} ${bicim.format(k.satis)} lira').join(', ')}',
+    );
+  }
+
   return parcalar.join(', ');
 }

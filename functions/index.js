@@ -654,3 +654,28 @@ export const hava = onRequest({ region: BOLGE }, async (req, res) => {
     res.status(502).json({ hata: "hava durumu alınamadı" });
   }
 });
+
+// ─── Döviz ────────────────────────────────────────────────────────────
+
+/** TCMB kurları.
+ *
+ * TCMB günde bir kez (~15:30) ve yalnız iş günleri yayımlıyor, yani
+ * yarım saatlik önbellek yeni bülteni geciktirmiyor. Yanıttaki `tarih`
+ * bültenin tarihi; arayüz onu göstermek zorunda, çünkü hafta sonu ve
+ * pazartesi sabahı gelen sayı önceki iş gününe ait.
+ */
+export const doviz = onRequest({ region: BOLGE }, async (req, res) => {
+  try {
+    const { dovizCek } = await import("./doviz.js");
+    const veri = await dovizCek();
+    if (!veri.kurlar.length) throw new Error("bültenden kur okunamadı");
+    res.set("Cache-Control", "public, max-age=1800, s-maxage=1800, " +
+      "stale-while-revalidate=7200");
+    res.set("Content-Type", "application/json; charset=utf-8");
+    res.status(200).send(JSON.stringify(veri));
+  } catch (hata) {
+    console.error("doviz", hata);
+    res.set("Cache-Control", "public, max-age=120");
+    res.status(502).json({ hata: "kurlar alınamadı" });
+  }
+});
