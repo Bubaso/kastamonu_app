@@ -186,3 +186,20 @@ test("kapsam: eleme, etki listesinden önce geliyor", () => {
 test("kapsam: ilgisiz ulusal haber alınmıyor", () => {
   assert.equal(kapsam({ baslik: "İzmir'de trafik kazası", ozet: "" }), null);
 });
+
+test("yerel gazetenin haberi, Kastamonu geçmese de yerel", () => {
+  // Ölçümde elenen gerçek örnek: KATSO = Kastamonu Ticaret ve Sanayi Odası.
+  const h = { baslik: "KATSO'da Fındıkoğlu yeniden başkan seçildi", ozet: "" };
+  assert.equal(kapsam(h), null, "ulusal toplayıcıda alınmamalı");
+  assert.equal(kapsam(h, { yerelKaynak: true }), "yerel");
+});
+
+test("yerel gazetenin ulusal dolgusu yine ulusal", () => {
+  const h = { baslik: "SGK'dan emeklilere 81 ilde indirim", ozet: "" };
+  assert.equal(kapsam(h, { yerelKaynak: true }), "ulusal");
+});
+
+test("yerel gazetenin siyaset haberi yine eleniyor", () => {
+  const h = { baslik: "CHP Genel Başkanı aileyi ziyaret etti", ozet: "" };
+  assert.equal(kapsam(h, { yerelKaynak: true }), null);
+});

@@ -189,20 +189,31 @@ const ELE = [
   "transfer", "derbi", "super lig", "sampiyonlar ligi",
   "magazin", "dizi", "sosyal medyada gundem",
   "parti", "kurultay", "muhalefet", "iktidar", "aciklamasi gundem oldu",
+  "genel baskan", "chp", "akp", "ak parti", "mhp", "iyi parti", "dem parti",
+  "cumhurbaskani", "milletvekili", "bakan ", "meclis genel kurulu",
   "borsa", "dolar kuru", "kripto",
 ];
 
 /** Haberin kapsamı: 'yerel', 'ulusal' ya da null (alınmaz).
  *
- * Yerel her zaman önce bakılıyor: Kastamonu geçen haber, konusu ne
- * olursa olsun yerel haberdir.
+ * `yerelKaynak`, haberi Kastamonu gazetesinin yayımladığını söylüyor.
+ * Bu fark önemli: ölçümde "KATSO'da Fındıkoğlu yeniden başkan seçildi"
+ * eleniyordu, çünkü başlıkta "Kastamonu" geçmiyor — oysa KATSO
+ * Kastamonu Ticaret ve Sanayi Odası ve haber tam da yerel haber.
+ *
+ * Yerel gazete kendi bölgesini yazar; aksi ispatlanana kadar yazdığı
+ * yereldir. Ulusal toplayıcıda ise tersi geçerli: Kastamonu adı
+ * geçmiyorsa o haber bizim değil.
  */
-export function kapsam(h) {
+export function kapsam(h, { yerelKaynak = false } = {}) {
   if (yerelMi(h)) return "yerel";
+
   const m = sade(`${h.baslik} ${h.ozet}`);
   if (ELE.some((k) => m.includes(k))) return null;
   if (ETKI.some((k) => m.includes(k))) return "ulusal";
-  return null;
+
+  // Yerel gazetenin, ulusal gündem olduğu belli olmayan haberi.
+  return yerelKaynak ? "yerel" : null;
 }
 
 /** Haber yeterince taze mi.
@@ -231,6 +242,8 @@ export const KAYNAKLAR = [
     ad: "Kastamonu İstiklal",
     adres: "https://www.kastamonuistiklal.com/rss",
     coz: (x) => rssOku(x, "Kastamonu İstiklal Gazetesi"),
+    // Kastamonu gazetesi: yazdığı, aksi belli olmadıkça yereldir.
+    yerel: true,
   },
   {
     ad: "Google Haberler",
@@ -255,7 +268,7 @@ export async function tara(kaynaklar = KAYNAKLAR, getir = agdanGetir) {
       // Kapsam ve tazelik kaynakta uygulanıyor: elenen kayıt
       // kümelemeye de, modele de hiç gitmiyor.
       const n = k.coz(await getir(k.adres))
-        .map((h) => ({ ...h, kapsam: kapsam(h) }))
+        .map((h) => ({ ...h, kapsam: kapsam(h, { yerelKaynak: k.yerel === true }) }))
         .filter((h) => h.kapsam && tazeMi(h));
       kayitlar.push(...n);
     } catch (e) {
