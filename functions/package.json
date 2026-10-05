@@ -5,7 +5,7 @@
   "engines": { "node": "22" },
   "main": "index.js",
   "scripts": {
-    "test": "node --test gorsel-yol.test.js tekille.test.js hat/kaynak.test.js hat/kaydet.test.js hat/kos.test.js hat/yetki.test.js"
+    "test": "node --test gorsel-yol.test.js hava.test.js tekille.test.js hat/kaynak.test.js hat/kaydet.test.js hat/kos.test.js hat/yetki.test.js"
   },
   "dependencies": {
     "firebase-functions": "^6.0.0",

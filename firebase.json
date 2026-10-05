@@ -54,6 +54,13 @@
         }
       },
       {
+        "source": "/api/hava",
+        "function": {
+          "functionId": "hava",
+          "region": "europe-west1"
+        }
+      },
+      {
         "source": "**",
         "destination": "/app.html"
       }

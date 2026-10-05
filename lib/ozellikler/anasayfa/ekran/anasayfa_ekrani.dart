@@ -14,6 +14,7 @@ import '../../../cekirdek/tema.dart';
 import '../../../cekirdek/tercihler.dart';
 import '../../inceleme/model/haber.dart';
 import '../veri/anasayfa_deposu.dart';
+import '../../hava/ekran/hava_seridi.dart';
 import '../veri/kapak.dart';
 
 /// Ana sayfa — portalın asıl ürünü.
@@ -88,6 +89,9 @@ class _AnasayfaEkraniState extends ConsumerState<AnasayfaEkrani> {
           Kunye(baslik: kategoriAdi ?? 'Kastamonu Haber'),
           const _SonDakika(),
           const _KategoriCubugu(),
+          // Hava, bölüm çubuğunun hemen altında: başlığın devamı gibi
+          // duruyor, haberle yarışmıyor. Veri yoksa hiç çizilmiyor.
+          const HavaSeridi(),
           haberler.when(
             loading: () => SliverToBoxAdapter(
               child: Center(

@@ -20,7 +20,8 @@ echo "▸ Flutter web derleniyor…"
 flutter build web --release \
   --dart-define=SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY" \
   --dart-define=SUPABASE_URL="${SUPABASE_URL:-https://vcwgcvzqdnjyoitdfhma.supabase.co}" \
-  --dart-define=GORSEL_TABANI=/gorsel
+  --dart-define=GORSEL_TABANI=/gorsel \
+  --dart-define=HAVA_TABANI=/api/hava
 
 echo "▸ Uygulama kabuğu yeniden adlandırılıyor (index.html → app.html)…"
 # Firebase Hosting statik dosyayı yönlendirmeden önce sunuyor; index.html

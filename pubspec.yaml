@@ -46,6 +46,10 @@ dependencies:
   # İlçem seçimi, kaydedilen haberler ve punto tercihi
   # cihazda saklanıyor — üyelik yok.
   shared_preferences: ^2.3.3
+  # Hava durumu uç noktası için. Supabase zaten dolaylı olarak
+  # getiriyordu; doğrudan kullanacaksak doğrudan bildirmek gerekiyor,
+  # yoksa Supabase sürümü değiştiğinde sessizce kırılır.
+  http: ^1.2.0
 
 dev_dependencies:
   flutter_test:

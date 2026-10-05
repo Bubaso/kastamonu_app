@@ -602,3 +602,31 @@ export const hatKos = onRequest(
       res.status(500).json({ hata: String(hata?.message ?? hata).slice(0, 300) });
     }
   });
+
+// ─── Hava durumu ──────────────────────────────────────────────────────
+
+/** Kastamonu ve ilçelerinin hava durumu.
+ *
+ * Yanıt CDN'de yarım saat duruyor: ziyaretçi sayısı ne olursa olsun
+ * yukarı akışa ilçe başına saatte iki istek gidiyor. `stale-while-
+ * revalidate` ile süre dolduğunda okur beklemiyor, eski yanıtı alıyor
+ * ve yenisi arkada tazeleniyor.
+ */
+export const hava = onRequest({ region: BOLGE }, async (req, res) => {
+  try {
+    const { havaCek } = await import("./hava.js");
+    const ilce = String(req.query.ilce ?? "Merkez");
+    const veri = await havaCek(ilce);
+    res.set("Cache-Control", "public, max-age=1800, s-maxage=1800, " +
+      "stale-while-revalidate=3600");
+    res.set("Content-Type", "application/json; charset=utf-8");
+    res.status(200).send(JSON.stringify(veri));
+  } catch (hata) {
+    console.error("hava", hata);
+    // Hava durumu sayfanın yardımcı öğesi: düştüğünde şerit çizilmiyor,
+    // sayfa çalışmaya devam ediyor. Kısa önbellek, sağlayıcı
+    // toparladığında okurun uzun süre şeritsiz kalmaması için.
+    res.set("Cache-Control", "public, max-age=120");
+    res.status(502).json({ hata: "hava durumu alınamadı" });
+  }
+});
