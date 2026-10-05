@@ -149,16 +149,60 @@ function sade(x) {
   return s;
 }
 
-/** Haber Kastamonu'yu ilgilendiriyor mu.
- *
- * Yerel gazetelerin beslemesi ulusal dolgu da taşıyor: "SGK'dan
- * emeklilere 81 ilde indirim", "Konut kredisinde yeni faiz oranları".
- * Bunlar şehir portalının haberi değil — her yerde var ve okuru
- * Kastamonu'ya getirmiyor.
- */
+/** Haber Kastamonu'yu ilgilendiriyor mu. */
 export function yerelMi(h) {
   const m = sade(`${h.baslik} ${h.ozet}`);
   return YERLER.some((y) => m.includes(y));
+}
+
+// ── Ülke gündemi ─────────────────────────────────────────────────
+//
+// Kastamonulu da Türkiye'de yaşıyor: emekli aylığı, vergi, sınav
+// takvimi onu da ilgilendiriyor. Ama ulusal haberi serbest bıraksak
+// portal bir anda ulusal portale dönüşür — yerel haber günde onlarca,
+// ulusal haber günde yüzlerce.
+//
+// Ölçüt şu: haber okurun YAPTIĞINI, ALDIĞINI, ÖDEDİĞİNİ ya da BİLMEK
+// ZORUNDA OLDUĞUNU değiştiriyor mu. "Emekliye zam" değiştiriyor,
+// "Mecliste tartışma" değiştirmiyor.
+//
+// Liste bilerek açık ve dar: ayar düğmesi bu. Genişletmek portalı
+// ulusala kaydırır, daraltmak okurun işine yarayan haberi kaçırır.
+
+/** Okurun cebine, hakkına ya da takvimine dokunan alanlar. */
+const ETKI = [
+  "emekli", "maas", "zam", "asgari ucret", "promosyon",
+  "vergi", "otv", "kdv", "harc", "faiz", "kredi",
+  "sgk", "sosyal guvenlik", "saglik hakki", "tedavi bedeli", "ilac",
+  "destek odemesi", "tesvik", "burs", "yardim odemesi",
+  "sinav takvimi", "basvuru suresi", "son basvuru", "yks", "lgs", "kpss",
+  "okul takvimi", "resmi tatil", "ehliyet", "askerlik",
+  "geri cagirma", "salgin", "afet uyarisi", "saganak", "kar uyarisi",
+];
+
+/** Ulusal haberi eleyen konular.
+ *
+ * Bunlar da ülke geneli ama okurun hayatını değiştirmiyor; portalı
+ * ulusal gazeteye çeviren tam olarak bu tür haberler.
+ */
+const ELE = [
+  "transfer", "derbi", "super lig", "sampiyonlar ligi",
+  "magazin", "dizi", "sosyal medyada gundem",
+  "parti", "kurultay", "muhalefet", "iktidar", "aciklamasi gundem oldu",
+  "borsa", "dolar kuru", "kripto",
+];
+
+/** Haberin kapsamı: 'yerel', 'ulusal' ya da null (alınmaz).
+ *
+ * Yerel her zaman önce bakılıyor: Kastamonu geçen haber, konusu ne
+ * olursa olsun yerel haberdir.
+ */
+export function kapsam(h) {
+  if (yerelMi(h)) return "yerel";
+  const m = sade(`${h.baslik} ${h.ozet}`);
+  if (ELE.some((k) => m.includes(k))) return null;
+  if (ETKI.some((k) => m.includes(k))) return "ulusal";
+  return null;
 }
 
 /** Haber yeterince taze mi.
@@ -208,7 +252,11 @@ export async function tara(kaynaklar = KAYNAKLAR, getir = agdanGetir) {
     try {
       // Yerellik ve tazelik süzgeci kaynakta uygulanıyor: elenen
       // kayıt kümelemeye de, modele de hiç gitmiyor.
-      const n = k.coz(await getir(k.adres)).filter((h) => yerelMi(h) && tazeMi(h));
+      // Kapsam ve tazelik kaynakta uygulanıyor: elenen kayıt
+      // kümelemeye de, modele de hiç gitmiyor.
+      const n = k.coz(await getir(k.adres))
+        .map((h) => ({ ...h, kapsam: kapsam(h) }))
+        .filter((h) => h.kapsam && tazeMi(h));
       kayitlar.push(...n);
     } catch (e) {
       hatalar.push({ kaynak: k.ad, hata: String(e).slice(0, 200) });

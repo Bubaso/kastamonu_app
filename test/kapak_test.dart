@@ -282,4 +282,48 @@ void main() {
       expect(_katlar(k, 'tek'), ['manset']);
     });
   });
+
+  _ulusalTestleri();
+}
+
+void _ulusalTestleri() {
+  group('Ulusal gündem', () {
+    Haber u(String id) => _h(onem: 8, id: id, kategori: 'Türkiye');
+
+    test('manşete çıkamıyor', () {
+      // Önemi en yüksek olsa bile: manşet Kastamonu haberinin yeri.
+      final k = Kapak.kur([u('u1'), _h(onem: 3, id: 'y1')], simdi: _simdi);
+      expect(k.manset?.id, 'y1');
+    });
+
+    test('üst katların hiçbirine girmiyor', () {
+      final k = Kapak.kur(
+        [u('u1'), u('u2'), for (var i = 0; i < 20; i++) _h(onem: 4, id: 'y$i')],
+        simdi: _simdi,
+      );
+      final ust = [
+        ...k.ikincil, ...k.kisaKisa, ...k.gundem,
+        ...k.asayis, ...k.secme, ...k.gozden,
+      ];
+      expect(ust.where((h) => h.kategoriAd == 'Türkiye'), isEmpty);
+    });
+
+    test('kendi bölümünde ve en sonda', () {
+      final k = Kapak.kur(
+        [u('u1'), for (var i = 0; i < 20; i++) _h(onem: 4, id: 'y$i')],
+        simdi: _simdi,
+      );
+      expect(k.bolumler.last.ad, 'Türkiye');
+      expect(k.bolumler.last.haberler.single.id, 'u1');
+    });
+
+    test('sayısı sınırlı', () {
+      final k = Kapak.kur(
+        [for (var i = 0; i < 12; i++) u('u$i'), _h(onem: 4, id: 'y1')],
+        simdi: _simdi,
+      );
+      final t = k.bolumler.firstWhere((b) => b.ad == 'Türkiye');
+      expect(t.haberler.length, Kapak.ulusalSiniri);
+    });
+  });
 }
