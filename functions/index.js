@@ -440,7 +440,9 @@ export const hatKos = onRequest(
       const eklenen = [];
       if (yaz && yz) {
         const { slugla } = await import("./hat/kaydet.js");
-        for (const { sentez, olay } of sonuc.yazilan) {
+        // Görsel kopyalama da paralel: her biri bir indirme + bir
+        // yükleme, sırayla yapıldığında koşunun yarısını yiyor.
+        const isler = sonuc.yazilan.map(({ sentez, olay }) => async () => {
           try {
             // Görsel kendi depomuza kopyalanıyor; kopyalanamazsa haber
             // AÇILMIYOR. Görselsiz haber yayımlanmıyor.
@@ -452,7 +454,7 @@ export const hatKos = onRequest(
               sonuc.atlanan.push({
                 baslik: sentez.baslik, sebep: "görsel kopyalanamadı",
               });
-              continue;
+              return;
             }
             const k = await yz.ekle(satirKur(
               sentez, olay, sonuc.katMap.get(sentez.kategori),
@@ -464,7 +466,11 @@ export const hatKos = onRequest(
               sebep: String(e?.message ?? e).slice(0, 160),
             });
           }
-        }
+        });
+        const kuyruk = [...isler];
+        await Promise.all(Array.from(
+          { length: Math.min(5, kuyruk.length) },
+          async () => { for (let f = kuyruk.shift(); f; f = kuyruk.shift()) await f(); }));
       }
 
       res.status(200).json({
