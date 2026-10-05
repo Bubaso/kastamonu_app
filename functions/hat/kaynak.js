@@ -308,23 +308,30 @@ export const KAYNAKLAR = [
  * nesnede `hatalar` içinde bildiriliyor.
  */
 export async function tara(kaynaklar = KAYNAKLAR, getir = agdanGetir) {
-  const kayitlar = [];
   const hatalar = [];
-  await Promise.all(kaynaklar.map(async (k) => {
+  // Kaynaklar paralel çekiliyor ama sonuç KAYNAK SIRASINA göre
+  // birleştiriliyor, bitiş sırasına göre değil.
+  //
+  // Eskiden her kaynak bittiğinde `kayitlar`a push ediyordu, yani
+  // sıra hangi fetch'in önce döndüğüne bağlıydı. Küme üyelerinin
+  // sırası da buna bağlı olduğu için kümenin "adresi olan ilk üyesi"
+  // koşudan koşuya değişiyordu. Tekilleştirme o adrese baktığından
+  // aynı haber bir koşuda "zaten kayıtlı", ötekinde yeni görünüyordu:
+  // ölçümde 129 kümenin 7'si iki ardışık koşuda lider adresini
+  // değiştirdi ve her koşu boşa model çağrısı yaktı.
+  const parcalar = await Promise.all(kaynaklar.map(async (k) => {
     try {
-      // Yerellik ve tazelik süzgeci kaynakta uygulanıyor: elenen
-      // kayıt kümelemeye de, modele de hiç gitmiyor.
       // Kapsam ve tazelik kaynakta uygulanıyor: elenen kayıt
       // kümelemeye de, modele de hiç gitmiyor.
-      const n = k.coz(await getir(k.adres))
+      return k.coz(await getir(k.adres))
         .map((h) => ({ ...h, kapsam: kapsam(h, { yerelKaynak: k.yerel === true }) }))
         .filter((h) => h.kapsam && tazeMi(h));
-      kayitlar.push(...n);
     } catch (e) {
       hatalar.push({ kaynak: k.ad, hata: String(e).slice(0, 200) });
+      return [];
     }
   }));
-  return { kayitlar, hatalar };
+  return { kayitlar: parcalar.flat(), hatalar };
 }
 
 // ── Haber gövdesi ────────────────────────────────────────────────

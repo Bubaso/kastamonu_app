@@ -176,3 +176,44 @@ test("kümede tek üyenin görseli varsa yetiyor", async () => {
   });
   assert.equal(sonuc.yazilan.length, 1);
 });
+
+// ── Tekilleştirme kümenin BÜTÜN üyelerine bakıyor ───────────────
+//
+// Aynı olay hem yayının kendi beslemesinden hem Google Haberler'den
+// geliyor; ikisinin adresi farklı. Kayıtta yalnız biri duruyor.
+// Yalnız kümenin ilk üyesine bakmak, ötekinin kayıtlı olduğu durumu
+// kaçırıyordu: haber her koşuda yeniden sentezleniyor, her koşu boşa
+// model çağrısı yakıyordu.
+
+test("üyelerden herhangi biri kayıtlıysa olay yeniden sentezlenmiyor", async () => {
+  const KAYIT = "https://news.google.com/rss/articles/XYZ";
+  let cagrildi = 0;
+  const sonuc = await kos({
+    tara: async () => ({
+      kayitlar: [
+        // İLK üye kayıtlı DEĞİL; ikincisi kayıtlı. Eski kod bunu kaçırıyordu.
+        k("Taşköprü'de sarımsak hasadı başladı", {
+          adres: "https://taskoprupostasi.com/sarimsak",
+          ozet: "Taşköprü'de sarımsak hasadı başladı ve üreticiler tarlada mesaide.",
+        }),
+        k("Taşköprü'de sarımsak hasadı başladı", {
+          adres: KAYIT, kaynak: "B",
+          ozet: "Taşköprü'de sarımsak hasadı başladı, üreticiler tarlaya indi.",
+        }),
+      ],
+      hatalar: [],
+    }),
+    cagir: async () => { cagrildi++; throw new Error("sentez çağrılmamalıydı"); },
+    yazici: {
+      varMi: async () => new Set([KAYIT]),
+      kategoriler: async () => new Map([["Tarım", 1]]),
+      ekle: async () => { throw new Error("yazılmamalıydı"); },
+    },
+    kuru: false,
+  });
+
+  assert.equal(cagrildi, 0, "kayıtlı olay modele gitmemeli");
+  assert.equal(sonuc.yazilan.length, 0);
+  assert.ok(sonuc.atlanan.some((a) => a.sebep === "zaten kayıtlı"),
+    `atlanan: ${JSON.stringify(sonuc.atlanan)}`);
+});
