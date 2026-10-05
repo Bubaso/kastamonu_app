@@ -46,6 +46,16 @@ class Kapak {
   /// Yeri sayfanın kendi bölümü, en altta, ve orada da sınırlı.
   static const ulusalBolum = 'Türkiye';
 
+  /// Bir bölümün anasayfada gösterdiği en çok haber.
+  ///
+  /// Anasayfa vitrin, arşiv değil: bölümün tamamı "Tümü →" bağlantısının
+  /// ardında. Altı kart geniş ekranda iki satır demek.
+  ///
+  /// Sınır YALNIZCA bölüm sayfası olan bölümlere uygulanıyor — bkz.
+  /// [Kapak.kur]. Bağlantısı olmayan bir bölümde kırpmak haberi siteden
+  /// tamamen silerdi.
+  static const bolumSiniri = 6;
+
   /// Anasayfada gösterilen en çok ulusal haber.
   ///
   /// Ayar düğmesi bu. Büyütmek portalı ulusala kaydırır, küçültmek
@@ -164,7 +174,7 @@ class Kapak {
   /// Kural: her kat kendinden öncekinin ALMADIĞINDAN seçiyor ve her katın
   /// bir üst sınırı var. Böylece aynı haber sayfada iki kez görünemiyor ve
   /// "Asayiş" bütün havuzu yutup diğer katları boşaltamıyor. Artan haber
-  /// sona, [kalan] akışına düşüyor — hiçbir şey kaybolmuyor.
+  /// sona, [bolumler] katlarına düşüyor.
   factory Kapak.kur(
     List<Haber> tumu, {
     String? ilcemId,
@@ -284,7 +294,17 @@ class Kapak {
       sluglar[ad] = h.kategoriSlug;
     }
     final bolumler = gruplar.entries
-        .map((e) => BolumKati(ad: e.key, slug: sluglar[e.key], haberler: e.value))
+        .map((e) => BolumKati(
+              ad: e.key,
+              slug: sluglar[e.key],
+              // Kırpma bölüm sayfası VARSA yapılıyor. Anasayfadan düşen
+              // haber "Tümü →" bağlantısının ardında duruyor; bağlantı
+              // yoksa o haber siteden tamamen kaybolurdu, ki kırpmanın
+              // amacı vitrini seyreltmek, arşivi budamak değil.
+              haberler: sluglar[e.key] == null
+                  ? e.value
+                  : e.value.take(bolumSiniri).toList(),
+            ))
         // Kalabalık bölüm önce: okur en çok haberin olduğu yerde daha
         // uzun kalıyor ve sayfa yukarıdan aşağı seyrelerek bitiyor.
         .toList()
