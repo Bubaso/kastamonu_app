@@ -132,6 +132,47 @@ export function googleHaberler(xml) {
   }).filter((h) => h.baslik);
 }
 
+// ── Süzgeçler ────────────────────────────────────────────────────
+
+/** Kastamonu ve ilçeleri — yerellik süzgeci için. */
+const YERLER = [
+  "kastamonu", "abana", "agli", "arac", "azdavay", "bozkurt", "catalzeytin",
+  "cide", "daday", "devrekani", "doganyurt", "hanonu", "ihsangazi", "inebolu",
+  "kure", "pinarbasi", "senpazar", "seydiler", "taskopru", "tosya",
+];
+
+/** Türkçe sadeleştirme — `lib/cekirdek/metin.dart` ile aynı tablo. */
+function sade(x) {
+  const e = { "ç": "c", "ğ": "g", "ı": "i", "ö": "o", "ş": "s", "ü": "u" };
+  let s = String(x ?? "").replace(/I/g, "ı").replace(/İ/g, "i").toLowerCase();
+  for (const [k, h] of Object.entries(e)) s = s.split(k).join(h);
+  return s;
+}
+
+/** Haber Kastamonu'yu ilgilendiriyor mu.
+ *
+ * Yerel gazetelerin beslemesi ulusal dolgu da taşıyor: "SGK'dan
+ * emeklilere 81 ilde indirim", "Konut kredisinde yeni faiz oranları".
+ * Bunlar şehir portalının haberi değil — her yerde var ve okuru
+ * Kastamonu'ya getirmiyor.
+ */
+export function yerelMi(h) {
+  const m = sade(`${h.baslik} ${h.ozet}`);
+  return YERLER.some((y) => m.includes(y));
+}
+
+/** Haber yeterince taze mi.
+ *
+ * Yerel gazetelerin RSS'i aylar öncesine uzanabiliyor: ölçümde altı ay
+ * önceki 23 Nisan kutlaması geldi. Haber sitesinin akışında eski haber
+ * yeni haber gibi görünüyor.
+ */
+export function tazeMi(h, gun = 7, simdi = Date.now()) {
+  const t = new Date(h.olusturuldu).getTime();
+  if (!Number.isFinite(t)) return false;
+  return simdi - t <= gun * 864e5;
+}
+
 /** Tanımlı kaynaklar. */
 export const KAYNAKLAR = [
   {
@@ -165,7 +206,9 @@ export async function tara(kaynaklar = KAYNAKLAR, getir = agdanGetir) {
   const hatalar = [];
   await Promise.all(kaynaklar.map(async (k) => {
     try {
-      const n = k.coz(await getir(k.adres));
+      // Yerellik ve tazelik süzgeci kaynakta uygulanıyor: elenen
+      // kayıt kümelemeye de, modele de hiç gitmiyor.
+      const n = k.coz(await getir(k.adres)).filter((h) => yerelMi(h) && tazeMi(h));
       kayitlar.push(...n);
     } catch (e) {
       hatalar.push({ kaynak: k.ad, hata: String(e).slice(0, 200) });
