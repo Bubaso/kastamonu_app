@@ -393,3 +393,87 @@ export const sitemap = onRequest({ region: BOLGE }, async (req, res) => {
     res.status(500).send("");
   }
 });
+
+// ─── Haber hattı ──────────────────────────────────────────────────
+//
+// Hat artık burada koşuyor. Daha önce kullanıcının kendi
+// bilgisayarındaki bir Python işçisiydi; o makine kapalıyken hiçbir
+// şey çekilmiyor, paneldeki düğme kuyruğa yazıp bekliyordu.
+//
+// YETKİ: koşu veritabanına yazıyor ve her çağrı model maliyeti
+// üretiyor. Fonksiyon `service_role` anahtarını taşıdığı için RLS onu
+// da sınırlamıyor. Bu yüzden uç nokta açık DEĞİL: çağıranın geçerli
+// bir editör oturumu olmak zorunda. Panel o oturumu zaten açıyor.
+//
+// YAZMA: varsayılan kuru koşu — hiçbir şey yazılmıyor, ne yazılacağı
+// dönüyor. Yazmak için `?yaz=1` gerekiyor. Yazılan kayıtlar
+// `durum='inceleme'` ile açılıyor; editör onayı akıştan çıkmıyor.
+
+export const hatKos = onRequest(
+  {
+    region: BOLGE,
+    timeoutSeconds: 540,
+    memory: "512MiB",
+    secrets: ["GEMINI_API_KEY", "SUPABASE_SERVICE_KEY"],
+  },
+  async (req, res) => {
+    const { oturumDogrula } = await import("./hat/yetki.js");
+    const oturum = await oturumDogrula(req.headers);
+    if (!oturum.tamam) {
+      return res.status(401).json({ hata: oturum.sebep });
+    }
+
+    const yaz = req.query.yaz === "1";
+    try {
+      const { tara } = await import("./hat/kaynak.js");
+      const { kos } = await import("./hat/kos.js");
+      const { cagirici } = await import("./hat/gemini.js");
+      const { satirKur, yazici } = await import("./hat/kaydet.js");
+
+      const yz = yaz ? yazici() : null;
+      const sonuc = await kos({
+        tara, cagir: cagirici(), yazici: yz, kuru: !yaz,
+        enCok: Math.min(Number(req.query.adet) || 12, 25),
+      });
+
+      const eklenen = [];
+      if (yaz && yz) {
+        for (const { sentez, olay } of sonuc.yazilan) {
+          try {
+            const k = await yz.ekle(
+              satirKur(sentez, olay, sonuc.katMap.get(sentez.kategori)));
+            eklenen.push({ id: k.id, baslik: k.baslik });
+          } catch (e) {
+            sonuc.atlanan.push({
+              baslik: sentez.baslik,
+              sebep: String(e?.message ?? e).slice(0, 160),
+            });
+          }
+        }
+      }
+
+      res.status(200).json({
+        kuru: sonuc.kuru,
+        ham: sonuc.ham,
+        olay: sonuc.olay,
+        birlesen: sonuc.birlesen,
+        uretilen: sonuc.yazilan.length,
+        eklenen,
+        atlanan: sonuc.atlanan,
+        kaynakHatalari: sonuc.kaynakHatalari,
+        haberler: sonuc.yazilan.map(({ sentez, olay, durum }) => ({
+          durum,
+          baslik: sentez.baslik,
+          spot: sentez.spot,
+          govde: sentez.govde,
+          kategori: sentez.kategori,
+          onem: sentez.onem,
+          kaynaklar: sentez.kullanilan_kaynaklar,
+          kume: olay.uyeler.map((h) => h.kaynak_adi),
+        })),
+      });
+    } catch (hata) {
+      console.error("hatKos", hata);
+      res.status(500).json({ hata: String(hata?.message ?? hata).slice(0, 300) });
+    }
+  });
