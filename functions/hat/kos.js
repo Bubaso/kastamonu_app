@@ -138,6 +138,30 @@ export function dogrula(s, olay) {
   if (!(s.kullanilan_kaynaklar ?? []).length) {
     throw new DenetimHatasi("hiçbir kaynak gösterilmemiş");
   }
+  // Sayı dayanağı.
+  //
+  // Ölçümde yakalanan gerçek hata: modele yalnız iki BAŞLIK verildi
+  // (özetler boştu) ve model plaka numarası, cadde adı, saat ve yaş
+  // uydurup tam bir haber metni yazdı — "37 M 0134 plakalı halk
+  // otobüsü", "Kuzeykent Mahallesi Alparslan Türkeş Bulvarı". Hiçbiri
+  // girdide yoktu.
+  //
+  // Yönergede "uydurma" yazması yetmiyor; ölçmek gerekiyor. Metindeki
+  // her sayı dizisi kaynak metinlerde geçmek zorunda. Sayılar bir
+  // haberin en somut ve en zararlı uydurma noktası: plaka, yaş, ölü
+  // sayısı, saat.
+  //
+  // Bedeli: kaynak "iki kişi" yazıp model "2 kişi" yazarsa bu denetim
+  // haberi reddediyor. Haber sisteminde bu doğru taraf — reddedilen
+  // haber editöre düşüyor, uydurulmuş haber okura gidiyor.
+  const kaynakMetni = olay.uyeler.map((h) => `${h.baslik} ${h.ozet}`).join(" ");
+  const sayilar = [...new Set(String(s.govde).match(/\d+/g) ?? [])];
+  const dayanaksiz = sayilar.filter((n) => !kaynakMetni.includes(n));
+  if (dayanaksiz.length) {
+    throw new DenetimHatasi(
+      `kaynakta geçmeyen sayı: ${dayanaksiz.slice(0, 5).join(", ")}`);
+  }
+
   for (const h of olay.uyeler) {
     const boy = enUzunOrtak(s.govde, `${h.baslik} ${h.ozet}`);
     if (boy >= KOPYA_ESIGI) {
@@ -193,6 +217,14 @@ export async function kos({
     const adres = o.uyeler.find((h) => h.adres)?.adres;
     if (adres && zatenVar.has(adres)) {
       atlanan.push({ baslik: o.capa.baslik, sebep: "zaten kayıtlı" });
+      continue;
+    }
+    // Hiçbir üyede metin yoksa modele hiç gitmiyoruz. Yalnız başlıkla
+    // haber yazmak uydurmaktan başka bir şey değil ve ölçümde tam
+    // olarak bu oldu. Modelin "yetmiyorsa boş bırak" kuralına
+    // güvenmek yetmedi: üç kümeden ikisinde uydu, birinde uydurdu.
+    if (!o.uyeler.some((h) => (h.ozet ?? "").trim().length > 40)) {
+      atlanan.push({ baslik: o.capa.baslik, sebep: "kaynak metni yok" });
       continue;
     }
     try {
