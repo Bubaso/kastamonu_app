@@ -243,12 +243,20 @@ export async function kos({
     katMap = await yz.kategoriler();
   }
 
+  // Kümeler PARALEL işleniyor, sırayla değil.
+  //
+  // Sırayla yapıldığında 20 küme × (sayfa çekme + model çağrısı) 540
+  // saniyelik fonksiyon sınırını aşıyordu ve koşu hiçbir şey
+  // yazamadan düşüyordu. Eşzamanlılık sınırlı: kaynak sitelere ve
+  // modele aynı anda onlarca istek atmak hem kaba hem kırılgan.
+  const EŞZAMAN = 5;
   const yazilan = [], atlanan = [];
-  for (const o of sira) {
+
+  async function birKume(o) {
     const adres = o.uyeler.find((h) => h.adres)?.adres;
     if (adres && zatenVar.has(adres)) {
       atlanan.push({ baslik: o.capa.baslik, sebep: "zaten kayıtlı" });
-      continue;
+      return;
     }
     // Hiçbir üyede metin yoksa modele hiç gitmiyoruz. Yalnız başlıkla
     // haber yazmak uydurmaktan başka bir şey değil ve ölçümde tam
@@ -256,7 +264,7 @@ export async function kos({
     // güvenmek yetmedi: üç kümeden ikisinde uydu, birinde uydurdu.
     if (!o.uyeler.some((h) => (h.ozet ?? "").trim().length > 40)) {
       atlanan.push({ baslik: o.capa.baslik, sebep: "kaynak metni yok" });
-      continue;
+      return;
     }
 
     // Görselsiz haber yayımlanmıyor. Bu bir ürün kararı: fotoğrafsız
@@ -265,7 +273,7 @@ export async function kos({
     // doldurmayı beklemek, inceleme masasını çöple doldurmak demek.
     if (!o.uyeler.some((h) => (h.gorsel ?? "").startsWith("http"))) {
       atlanan.push({ baslik: o.capa.baslik, sebep: "görsel yok" });
-      continue;
+      return;
     }
     try {
       // Gövdeler sentezden HEMEN ÖNCE dolduruluyor. RSS özeti ~150
@@ -285,6 +293,13 @@ export async function kos({
       });
     }
   }
+
+  // Sabit genişlikte havuz: sıradaki küme, biten işin yerine giriyor.
+  const kuyruk = [...sira];
+  await Promise.all(
+    Array.from({ length: Math.min(EŞZAMAN, kuyruk.length) }, async () => {
+      for (let o = kuyruk.shift(); o; o = kuyruk.shift()) await birKume(o);
+    }));
 
   return {
     kuru,
