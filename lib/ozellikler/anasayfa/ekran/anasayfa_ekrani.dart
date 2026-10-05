@@ -1353,7 +1353,7 @@ class _Kapak extends ConsumerWidget {
             if (kapak.kisaKisa.isNotEmpty) _KisaKisa(haberler: kapak.kisaKisa),
             if (kapak.ilcem.isNotEmpty) _IlcemSeridi(haberler: kapak.ilcem),
             if (kapak.gundem.isNotEmpty)
-              _Izgara(
+              Izgara(
                 baslik: 'Gündem',
                 haberler: kapak.gundem,
                 genis: genis,
@@ -1361,7 +1361,7 @@ class _Kapak extends ConsumerWidget {
               ),
             if (kapak.asayis.isNotEmpty) _KoyuKusak(haberler: kapak.asayis),
             if (kapak.secme.isNotEmpty)
-              _Izgara(
+              Izgara(
                 baslik: 'Kastamonu\'dan',
                 haberler: kapak.secme,
                 genis: genis,
@@ -1380,7 +1380,7 @@ class _Kapak extends ConsumerWidget {
         // açılışta inşa ediliyor ve kaydırma takılıyor.
         SliverList.builder(
           itemCount: kapak.bolumler.length,
-          itemBuilder: (c, i) => _Izgara(
+          itemBuilder: (c, i) => Izgara(
             baslik: kapak.bolumler[i].ad,
             slug: kapak.bolumler[i].slug,
             haberler: kapak.bolumler[i].haberler,
@@ -1779,11 +1779,19 @@ class _IlcemSeridi extends ConsumerWidget {
   }
 }
 
-/// Izgara bloğu — görselli, spotlu, bölüm başlıklı.
+/// Bir bölüm katı: bölüm başlığı + kart ızgarası.
 ///
-/// Geniş ekranda üç sütun kart; telefonda ilk haber Odak, gerisi satır.
-class _Izgara extends StatelessWidget {
-  const _Izgara({
+/// Geniş ekranda üç sütunluk SATIRLAR; telefonda ilk haber Odak, gerisi
+/// satır.
+///
+/// `Manset`, `Odak`, `Satir` gibi herkese açık: kart genişliği testte
+/// ÖLÇÜLÜYOR. Bu bileşen bir kez üç haberlik bloklar için yazılmış, sonra
+/// kategori bölümlerine bağlanmıştı; on dört haber geldiğinde her kart 52
+/// piksele düşüp başlıklar harf harf alt alta dizildi. Genişliği ölçen bir
+/// test olmadığı için bu yayına çıktı.
+class Izgara extends StatelessWidget {
+  const Izgara({
+    super.key,
     required this.baslik,
     required this.haberler,
     required this.genis,
@@ -1795,28 +1803,51 @@ class _Izgara extends StatelessWidget {
   final bool genis;
   final String? slug;
 
+  /// Geniş ekranda satır başına kart.
+  static const _sutun = 3;
+
   @override
   Widget build(BuildContext context) {
     final r = Renkler.of(context);
     return _Orta(
       child: Container(
         color: r.kart,
-        padding: const EdgeInsets.fromLTRB(18, 18, 18, 8),
+        padding: const EdgeInsets.fromLTRB(18, 18, 18, 18),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _BolumBasligi(baslik: baslik, slug: slug),
             const SizedBox(height: 14),
             if (genis)
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  for (var i = 0; i < haberler.length; i++) ...[
-                    if (i > 0) const SizedBox(width: 24),
-                    Expanded(child: _IzgaraKarti(haber: haberler[i])),
+              // Kartlar SATIRLARA bölünüyor, tek bir satıra
+              // sıkıştırılmıyor.
+              //
+              // Önceki hâli bütün haberleri tek `Row` içine `Expanded`
+              // ile koyuyordu: üç haberde doğru çalışıyor, on dört
+              // haberde her kart 75 piksele düşüyor ve başlıklar
+              // harf harf alt alta diziliyordu. Bu bileşen üç haberlik
+              // bloklar için yazılmıştı; kategori bölümlerine
+              // bağlanınca ortaya çıktı.
+              //
+              // Son satır eksik kalırsa boş `Expanded`ler konuyor,
+              // böylece kartlar dolu satırlarla aynı genişlikte
+              // kalıyor.
+              for (var satir = 0; satir * _sutun < haberler.length; satir++) ...[
+                if (satir > 0) const SizedBox(height: 22),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    for (var k = 0; k < _sutun; k++) ...[
+                      if (k > 0) const SizedBox(width: 24),
+                      Expanded(
+                        child: satir * _sutun + k < haberler.length
+                            ? _IzgaraKarti(haber: haberler[satir * _sutun + k])
+                            : const SizedBox.shrink(),
+                      ),
+                    ],
                   ],
-                ],
-              )
+                ),
+              ]
             else ...[
               Odak(haber: haberler.first),
               for (final h in haberler.skip(1)) Satir(haber: h),

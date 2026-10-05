@@ -13,6 +13,9 @@ Haber _h({
   String? kategori,
   List<String> ilceler = const [],
   String? id,
+  // Gerçek veride kategorinin bir bölüm sayfası var; varsayılan bu.
+  // [slugsuz] o sayfanın olmadığı durumu kuruyor.
+  bool slugsuz = false,
 }) {
   final k = id ?? 'h${_sayac++}';
   return Haber(
@@ -26,6 +29,7 @@ Haber _h({
     diaspora: false,
     durum: 'yayinda',
     kategoriAd: kategori,
+    kategoriSlug: slugsuz || kategori == null ? null : kategori.toLowerCase(),
     olusturuldu: _simdi.subtract(yas),
     yayinlandi: _simdi.subtract(yas),
     ilceler: [
@@ -135,10 +139,36 @@ void main() {
       }
     });
 
-    test('hiçbir haber kaybolmuyor', () {
+    test('hiçbir haber siteden kaybolmuyor', () {
+      // Değişmez "her haber anasayfada" DEĞİL — anasayfa vitrin ve bölüm
+      // katları altı kartta kırpılıyor. Değişmez şu: anasayfadan düşen
+      // haberin gidilecek bir adresi var, yani bölümünün "Tümü →"
+      // bağlantısı. Bağlantısız bir bölümden haber düşemez.
       final liste = [
         for (var i = 0; i < 25; i++)
           _h(onem: 4, yas: Duration(hours: i), kategori: 'Gündem'),
+      ];
+      final k = Kapak.kur(liste, simdi: _simdi);
+      for (final h in liste) {
+        if (_katlar(k, h.id).isNotEmpty) continue;
+        final ad = (h.kategoriAd ?? '').trim().isEmpty ? 'Kastamonu' : h.kategoriAd!;
+        final bolum = k.bolumler.where((b) => b.ad == ad).toList();
+        expect(bolum, hasLength(1), reason: '${h.id} için $ad bölümü yok');
+        expect(
+          bolum.single.slug,
+          isNotNull,
+          reason: '${h.id} ne anasayfada ne de ulaşılabilir bir bölüm sayfasında',
+        );
+      }
+    });
+
+    test('bölüm sayfası olmayan haber kırpılmıyor', () {
+      // "Tümü →" bağlantısı yoksa anasayfadan düşen haber siteden
+      // tamamen kaybolur. O yüzden slugsuz bölüm kırpılmıyor: tren
+      // riskini kabul edip haberi kaybetmemek, tersinden iyi.
+      final liste = [
+        for (var i = 0; i < 25; i++)
+          _h(onem: 4, yas: Duration(hours: i), kategori: 'Gündem', slugsuz: true),
       ];
       final k = Kapak.kur(liste, simdi: _simdi);
       final toplam = 1 +
@@ -150,7 +180,7 @@ void main() {
           k.secme.length +
           k.gozden.length +
           k.bolumler.fold<int>(0, (t, b) => t + b.haberler.length);
-      expect(toplam, liste.length);
+      expect(toplam, liste.length, reason: 'slugsuz bölümde haber kaybolmamalı');
     });
 
     test('asayiş bütün havuzu yutamıyor', () {
@@ -255,6 +285,23 @@ void main() {
         expect(b.ad, isNot(contains('Diğer')));
         expect(b.ad.trim(), isNotEmpty);
         expect(b.haberler, isNotEmpty);
+      }
+    });
+
+    test('bölüm anasayfada sınırlı sayıda haber gösteriyor', () {
+      // Sınır yokken bir kategori on dört haberle geliyordu ve ızgara
+      // hepsini tek satıra sıkıştırıp kartları 75 piksele düşürüyordu.
+      // Anasayfa vitrin; bölümün tamamı "Tümü →" bağlantısının ardında.
+      final liste = [
+        for (var i = 0; i < 60; i++) _h(onem: 4, id: 'h$i', kategori: 'Asayiş'),
+      ];
+      final k = Kapak.kur(liste, simdi: _simdi);
+      for (final b in k.bolumler) {
+        expect(
+          b.haberler.length,
+          lessThanOrEqualTo(Kapak.bolumSiniri),
+          reason: '${b.ad} bölümü ${b.haberler.length} haber taşıyor',
+        );
       }
     });
 
