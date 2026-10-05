@@ -428,7 +428,8 @@ export const hatKos = onRequest(
       const { tara } = await import("./hat/kaynak.js");
       const { kos } = await import("./hat/kos.js");
       const { cagirici } = await import("./hat/gemini.js");
-      const { satirKur, yazici } = await import("./hat/kaydet.js");
+      const { gorselKopyala, gorselSec, satirKur, yazici } =
+        await import("./hat/kaydet.js");
 
       const yz = yaz ? yazici() : null;
       const sonuc = await kos({
@@ -438,10 +439,24 @@ export const hatKos = onRequest(
 
       const eklenen = [];
       if (yaz && yz) {
+        const { slugla } = await import("./hat/kaydet.js");
         for (const { sentez, olay } of sonuc.yazilan) {
           try {
-            const k = await yz.ekle(
-              satirKur(sentez, olay, sonuc.katMap.get(sentez.kategori)));
+            // Görsel kendi depomuza kopyalanıyor; kopyalanamazsa haber
+            // AÇILMIYOR. Görselsiz haber yayımlanmıyor.
+            const sec = gorselSec(olay);
+            const kopya = sec
+              ? await gorselKopyala(sec.adres, slugla(sentez.baslik))
+              : null;
+            if (!kopya) {
+              sonuc.atlanan.push({
+                baslik: sentez.baslik, sebep: "görsel kopyalanamadı",
+              });
+              continue;
+            }
+            const k = await yz.ekle(satirKur(
+              sentez, olay, sonuc.katMap.get(sentez.kategori),
+              { adres: kopya, kaynak: sec.kaynak }));
             eklenen.push({ id: k.id, baslik: k.baslik });
           } catch (e) {
             sonuc.atlanan.push({

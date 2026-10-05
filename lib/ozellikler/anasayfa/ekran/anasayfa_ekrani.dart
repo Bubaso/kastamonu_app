@@ -1339,7 +1339,6 @@ class _Kapak extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final r = Renkler.of(context);
     final kapak = ref.watch(kapakSaglayici);
     if (kapak.bosMu) {
       return const SliverFillRemaining(hasScrollBody: false, child: Bos());
@@ -1368,23 +1367,25 @@ class _Kapak extends ConsumerWidget {
                 genis: genis,
               ),
             if (kapak.gozden.isNotEmpty) _Gozden(haberler: kapak.gozden),
-            if (kapak.kalan.isNotEmpty)
-              _Orta(
-                child: ColoredBox(
-                  color: r.kart,
-                  child: const Padding(
-                    padding: EdgeInsets.fromLTRB(18, 18, 18, 2),
-                    child: _BolumBasligi(baslik: 'Diğer haberler'),
-                  ),
-                ),
-              ),
           ],
         ),
-        // Kalan akış tembel kuruluyor: tek bir `Column`a toplanırsa yüzlerce
-        // haberin tamamı açılışta inşa ediliyor ve kaydırma takılıyor.
+        // Katlara girmeyen haberler BÖLÜM BÖLÜM, ızgara kartı olarak.
+        //
+        // Eskiden burası "Diğer haberler" başlıklı tek bir akıştı ve
+        // sayfanın sonunda tren gibi uzuyordu — aynı puntoda, aynı
+        // satırda, aynı küçük görselle onlarca haber. Artık her haber
+        // kendi bölümünün altında ve kart olarak duruyor.
+        //
+        // Tembel kuruluyor: tek bir `Column`a toplanırsa bütün bölümler
+        // açılışta inşa ediliyor ve kaydırma takılıyor.
         SliverList.builder(
-          itemCount: kapak.kalan.length,
-          itemBuilder: (c, i) => _Orta(child: Satir(haber: kapak.kalan[i])),
+          itemCount: kapak.bolumler.length,
+          itemBuilder: (c, i) => _Izgara(
+            baslik: kapak.bolumler[i].ad,
+            slug: kapak.bolumler[i].slug,
+            haberler: kapak.bolumler[i].haberler,
+            genis: genis,
+          ),
         ),
       ],
     );

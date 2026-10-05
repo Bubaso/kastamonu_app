@@ -85,8 +85,56 @@ export function yazici({ taban = null, anahtar = null, fetchIsl = fetch } = {}) 
   };
 }
 
+/** Kümedeki en iyi görsel ve onu veren yayın. */
+export function gorselSec(olay) {
+  const h = olay.uyeler.find((x) => (x.gorsel ?? "").startsWith("http"));
+  return h ? { adres: h.gorsel, kaynak: h.kaynak_adi } : null;
+}
+
+/** Görseli kendi depomuza kopyalar.
+ *
+ * Neden kopyalanıyor: boyutlandırma fonksiyonu (`/gorsel/...`) yalnız
+ * kendi depomuzdaki dosyaları servis ediyor. Kaynağın adresine
+ * bağlanmak, hem boyutlandırmayı hem de kaynak o adresi değiştirdiğinde
+ * görselin kaybolmamasını kaçırmak demek.
+ *
+ * Yüklenemezse null dönüyor; çağıran haberi görselsiz AÇMIYOR.
+ */
+export async function gorselKopyala(adres, slug, {
+  taban = null, anahtar = null, fetchIsl = fetch,
+} = {}) {
+  taban = taban || process.env.SUPABASE_URL;
+  anahtar = anahtar || process.env.SUPABASE_SERVICE_KEY;
+  try {
+    const y = await fetchIsl(adres, {
+      headers: { "User-Agent": "Mozilla/5.0" },
+    });
+    if (!y.ok) return null;
+    const tur = y.headers.get("content-type") ?? "";
+    if (!/^image\/(jpeg|png|webp)/.test(tur)) return null;
+    const veri = await y.arrayBuffer();
+    if (veri.byteLength < 2000) return null;   // ikon/placeholder
+
+    const uzanti = tur.includes("png") ? "png" : tur.includes("webp") ? "webp" : "jpg";
+    const dosya = `${slug.slice(0, 70)}-${Date.now().toString(36)}.${uzanti}`;
+
+    const u = await fetchIsl(`${taban}/storage/v1/object/gorseller/${dosya}`, {
+      method: "POST",
+      headers: {
+        apikey: anahtar, Authorization: `Bearer ${anahtar}`,
+        "Content-Type": tur, "x-upsert": "true",
+      },
+      body: veri,
+    });
+    if (!u.ok) return null;
+    return `${taban}/storage/v1/object/public/gorseller/${dosya}`;
+  } catch {
+    return null;
+  }
+}
+
 /** Sentez çıktısını veritabanı satırına çevirir. */
-export function satirKur(sentez, olay, kategoriId) {
+export function satirKur(sentez, olay, kategoriId, gorsel = null) {
   const lider = olay.uyeler.find((h) => h.adres) ?? olay.uyeler[0];
   return {
     baslik: sentez.baslik,
@@ -98,6 +146,8 @@ export function satirKur(sentez, olay, kategoriId) {
     // ötekini yutmak olmaz.
     kaynak_adi: (sentez.kullanilan_kaynaklar ?? []).join(", "),
     kaynak_url: lider?.adres ?? null,
+    gorsel_url: gorsel?.adres ?? null,
+    gorsel_kaynak: gorsel?.kaynak ?? null,
     onem: sentez.onem ?? 5,
     katman: 1,
     durum: "inceleme",

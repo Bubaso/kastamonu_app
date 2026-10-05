@@ -251,6 +251,15 @@ export async function kos({
       atlanan.push({ baslik: o.capa.baslik, sebep: "kaynak metni yok" });
       continue;
     }
+
+    // Görselsiz haber yayımlanmıyor. Bu bir ürün kararı: fotoğrafsız
+    // yerel haber sitesi okunmuyor. Kümede hiçbir üyenin görseli yoksa
+    // haber üretilmiyor — görselsiz bir kayıt açıp sonra elle
+    // doldurmayı beklemek, inceleme masasını çöple doldurmak demek.
+    if (!o.uyeler.some((h) => (h.gorsel ?? "").startsWith("http"))) {
+      atlanan.push({ baslik: o.capa.baslik, sebep: "görsel yok" });
+      continue;
+    }
     try {
       const s = kunyeyiDuzelt(await cagir(o), o);
       dogrula(s, o);
