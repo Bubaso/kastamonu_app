@@ -87,6 +87,36 @@ göstermesi ve kümeyi büyütmesi.
 **Bir kaynak düşerse koşu devam ediyor.** Tek bir yayının sitesi kapalı
 diye o günün hiç haberi gelmemesi kabul edilemez.
 
+## Uydurmaya karşı iki sert kural
+
+İlk gerçek koşuda sistem **iki başlıktan tam bir haber uydurdu**. Modele
+giden girdi şuydu — iki başlık, özet alanları boş:
+
+```
+"baslik": "Kastamonu'da otobüsün çarptığı yaya hayatını kaybetti"
+"ozet"  : ""
+```
+
+Çıkan metinde şunlar vardı: *"Kuzeykent Mahallesi Alparslan Türkeş
+Bulvarı"*, *"E.K. idaresindeki 37 M 0134 plakalı halk otobüsü"*,
+*"akşam saatlerinde"*, *"70 yaşındaki M.K."*. **Hiçbiri girdide yoktu.**
+
+Yönergede "kayıtlarda olmayan hiçbir şey ekleme" yazıyordu. Yetmedi: üç
+kümeden ikisinde kurala uydu, birinde uydurdu. Yönergeye güvenmek
+denetim değildir.
+
+**1. Kaynak metni olmayan küme modele hiç gitmiyor.** Bir kümenin hiçbir
+üyesinde 40 karakterden uzun özet yoksa koşu onu atlıyor. Yalnız
+başlıktan haber yazmak uydurmaktan başka bir şey değil.
+
+**2. Gövdedeki her sayı kaynak metinde geçmek zorunda.** Geçmiyorsa
+haber reddediliyor. Sayılar bir haberin en somut ve en zararlı uydurma
+noktası: plaka, yaş, ölü sayısı, saat.
+
+İkincisinin bedeli açık: kaynak "iki kişi" yazıp model "2 kişi" yazarsa
+haber reddedilir. Haber sisteminde doğru taraf bu — reddedilen haber
+editöre düşer, uydurulmuş haber okura gider.
+
 ## Eksik bilinen
 
 Ham kayıtlarda henüz kategori yok, bu yüzden kümelemenin **bölüm ailesi
