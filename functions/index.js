@@ -442,7 +442,7 @@ export const hatKos = onRequest(
         const { slugla } = await import("./hat/kaydet.js");
         // Görsel kopyalama da paralel: her biri bir indirme + bir
         // yükleme, sırayla yapıldığında koşunun yarısını yiyor.
-        const isler = sonuc.yazilan.map(({ sentez, olay }) => async () => {
+        const isler = sonuc.yazilan.map(({ sentez, olay, kapsam }) => async () => {
           try {
             // Görsel kendi depomuza kopyalanıyor; kopyalanamazsa haber
             // AÇILMIYOR. Görselsiz haber yayımlanmıyor.
@@ -456,8 +456,11 @@ export const hatKos = onRequest(
               });
               return;
             }
+            // Ulusal haber kendi bölümüne giriyor: anasayfada manşete
+            // çıkamasın ve yerel haberin yerini almasın diye.
+            const katAd = kapsam === "ulusal" ? "Türkiye" : sentez.kategori;
             const k = await yz.ekle(satirKur(
-              sentez, olay, sonuc.katMap.get(sentez.kategori),
+              sentez, olay, sonuc.katMap.get(katAd),
               { adres: kopya, kaynak: sec.kaynak }));
             eklenen.push({ id: k.id, baslik: k.baslik });
           } catch (e) {
@@ -482,8 +485,9 @@ export const hatKos = onRequest(
         eklenen,
         atlanan: sonuc.atlanan,
         kaynakHatalari: sonuc.kaynakHatalari,
-        haberler: sonuc.yazilan.map(({ sentez, olay, durum }) => ({
+        haberler: sonuc.yazilan.map(({ sentez, olay, durum, kapsam }) => ({
           durum,
+          kapsam,
           baslik: sentez.baslik,
           spot: sentez.spot,
           govde: sentez.govde,

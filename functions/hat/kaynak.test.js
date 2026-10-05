@@ -155,3 +155,34 @@ test("tazelik: eski haber eleniyor", () => {
   assert.equal(tazeMi({ olusturuldu: "2026-04-23T12:00:00Z" }, 7, simdi), false);
   assert.equal(tazeMi({ olusturuldu: "bozuk" }, 7, simdi), false);
 });
+
+import { kapsam } from "./kaynak.js";
+
+test("kapsam: Kastamonu geçen haber yerel", () => {
+  assert.equal(kapsam({ baslik: "Taşköprü'de sarımsak hasadı", ozet: "" }), "yerel");
+  // Konusu ulusal olsa bile Kastamonu geçiyorsa yerel haberdir.
+  assert.equal(kapsam({ baslik: "Kastamonu'da emeklilere indirim", ozet: "" }), "yerel");
+});
+
+test("kapsam: okurun cebine dokunan ulusal haber giriyor", () => {
+  // Kastamonulu da Türkiye'de yaşıyor.
+  assert.equal(kapsam({ baslik: "SGK'dan emeklilere 81 ilde indirim müjdesi", ozet: "" }), "ulusal");
+  assert.equal(kapsam({ baslik: "Konut kredisinde yeni faiz oranları belli oldu", ozet: "" }), "ulusal");
+  assert.equal(kapsam({ baslik: "YKS başvuru süresi uzatıldı", ozet: "" }), "ulusal");
+});
+
+test("kapsam: hayatı değiştirmeyen ulusal haber alınmıyor", () => {
+  // Portalı ulusal gazeteye çeviren tam olarak bunlar.
+  assert.equal(kapsam({ baslik: "Derbi öncesi transfer iddiası", ozet: "" }), null);
+  assert.equal(kapsam({ baslik: "Mecliste muhalefet ve iktidar tartıştı", ozet: "" }), null);
+  assert.equal(kapsam({ baslik: "Dolar kuru yeni rekor kırdı", ozet: "" }), null);
+});
+
+test("kapsam: eleme, etki listesinden önce geliyor", () => {
+  // "Transfer" geçen bir haber "maaş" da geçse alınmamalı.
+  assert.equal(kapsam({ baslik: "Transfer sezonunda maaş rekoru", ozet: "" }), null);
+});
+
+test("kapsam: ilgisiz ulusal haber alınmıyor", () => {
+  assert.equal(kapsam({ baslik: "İzmir'de trafik kazası", ozet: "" }), null);
+});

@@ -220,6 +220,7 @@ export async function kos({
   kuru = true,
   enCok = 12,
   govdeDoldur = null,
+  ulusalKota = 3,
 } = {}) {
   const { kayitlar, hatalar } = await taraIsl();
   const olaylar = kumele(kayitlar);
@@ -231,10 +232,27 @@ export async function kos({
   // metin yok — koşu sıfır haber üretti. Metni olan küme, kaynağı az
   // olsa bile yazılabilir bir haber demek.
   const metinli = (o) => o.uyeler.some((h) => (h.ozet ?? "").trim().length > 40);
-  const sira = olaylar
+  const ulusal = (o) => o.uyeler.every((h) => h.kapsam === "ulusal");
+  const siralı = olaylar
     .slice()
-    .sort((a, b) => (metinli(b) - metinli(a)) || (b.uyeler.length - a.uyeler.length))
-    .slice(0, enCok);
+    .sort((a, b) => (metinli(b) - metinli(a)) || (b.uyeler.length - a.uyeler.length));
+
+  // Ulusal haber KOTALI.
+  //
+  // Kastamonulu da Türkiye'de yaşıyor, ama ulusal haber günde
+  // yüzlerce, yerel haber günde onlarca. Kotasız bırakılırsa portal
+  // bir koşuda ulusal portale dönüşür. Sınır bir sayı, bir disiplin
+  // değil: yerel haberler önce alınıyor, ulusalın yeri artandan.
+  const sira = [];
+  let ulusalSayisi = 0;
+  for (const o of siralı) {
+    if (sira.length >= enCok) break;
+    if (ulusal(o)) {
+      if (ulusalSayisi >= ulusalKota) continue;
+      ulusalSayisi++;
+    }
+    sira.push(o);
+  }
 
   let zatenVar = new Set();
   let katMap = new Map();
@@ -285,7 +303,10 @@ export async function kos({
       }
       const s = kunyeyiDuzelt(await cagir(o), o);
       dogrula(s, o);
-      yazilan.push({ sentez: s, olay: o, durum: durum(s) });
+      yazilan.push({
+        sentez: s, olay: o, durum: durum(s),
+        kapsam: ulusal(o) ? "ulusal" : "yerel",
+      });
     } catch (e) {
       atlanan.push({
         baslik: o.capa.baslik,

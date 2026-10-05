@@ -35,6 +35,23 @@ class BolumKati {
 }
 
 class Kapak {
+  /// Ulusal gündem bölümünün adı.
+  ///
+  /// Kastamonulu da Türkiye'de yaşıyor: emekli aylığı, vergi, sınav
+  /// takvimi onu da ilgilendiriyor. Ama bu haberler manşete ÇIKAMIYOR
+  /// ve üst katların hiçbirine GİREMİYOR — girselerdi "emekliye zam"
+  /// o günün Kastamonu haberini aşağı iter, portal şehir gazetesi
+  /// olmaktan çıkıp ulusal portalin taşra baskısına dönerdi.
+  ///
+  /// Yeri sayfanın kendi bölümü, en altta, ve orada da sınırlı.
+  static const ulusalBolum = 'Türkiye';
+
+  /// Anasayfada gösterilen en çok ulusal haber.
+  ///
+  /// Ayar düğmesi bu. Büyütmek portalı ulusala kaydırır, küçültmek
+  /// okurun işine yarayan haberi kaçırır.
+  static const ulusalSiniri = 4;
+
   /// Lider haber. Liste boşsa null.
   final Haber? manset;
 
@@ -157,6 +174,16 @@ class Kapak {
     final o = simdi ?? DateTime.now();
     final alinan = <String>{};
 
+    // Ulusal gündem havuzun DIŞINDA tutuluyor: üst katların hiçbirine
+    // giremiyor. Girseydi "emekliye zam" manşete çıkıp o günün
+    // Kastamonu haberini aşağı iterdi ve portal şehir gazetesi olmaktan
+    // çıkardı. Yeri sayfanın kendi bölümü, orada da sınırlı.
+    final yerel = tumu.where((h) => h.kategoriAd != ulusalBolum).toList();
+    final ulusalHaberler = tumu
+        .where((h) => h.kategoriAd == ulusalBolum)
+        .take(ulusalSiniri)
+        .toList();
+
     /// Henüz alınmamış, koşula uyan ilk [adet] haber.
     ///
     /// [sira] verilmezse gelen sıra korunuyor — depo zaten yayın zamanına
@@ -167,7 +194,7 @@ class Kapak {
       Comparator<Haber>? sira,
     }) {
       if (adet <= 0) return const [];
-      final adaylar = tumu
+      final adaylar = yerel
           .where((h) => !alinan.contains(h.id) && kosul(h))
           .toList();
       if (sira != null) adaylar.sort(sira);
@@ -183,7 +210,7 @@ class Kapak {
     // haberi varsa) sınır gevşetilip kalan yerler dolduruluyor, çünkü boş
     // bir manşet bloğu çeşitlilikten daha kötü.
     final ustHedef = 1 + _ikincilAdedi;
-    final ustAdaylar = tumu.toList()
+    final ustAdaylar = yerel.toList()
       ..sort((a, b) => puanKarsilastir(a, b, simdi: o));
     final ustBlok = <Haber>[];
     final aileSayisi = <BolumAilesi, int>{};
@@ -248,7 +275,7 @@ class Kapak {
     // Katlara girmeyenler bölüme göre gruplanıyor. Tek bir "Diğer
     // haberler" akışı yok: her haber kendi bölümünün altında, ızgara
     // kartı olarak duruyor.
-    final artan = tumu.where((h) => !alinan.contains(h.id)).toList();
+    final artan = yerel.where((h) => !alinan.contains(h.id)).toList();
     final gruplar = <String, List<Haber>>{};
     final sluglar = <String, String?>{};
     for (final h in artan) {
@@ -262,6 +289,17 @@ class Kapak {
         // uzun kalıyor ve sayfa yukarıdan aşağı seyrelerek bitiyor.
         .toList()
       ..sort((a, b) => b.haberler.length.compareTo(a.haberler.length));
+
+    // Ulusal bölüm her zaman EN SONDA, yerel bölümlerin tamamının
+    // altında. Sıralamaya katılsaydı kalabalık olduğu günlerde en üste
+    // çıkabilirdi.
+    if (ulusalHaberler.isNotEmpty) {
+      bolumler.add(BolumKati(
+        ad: ulusalBolum,
+        slug: ulusalHaberler.first.kategoriSlug,
+        haberler: ulusalHaberler,
+      ));
+    }
 
     return Kapak(
       manset: manset,
