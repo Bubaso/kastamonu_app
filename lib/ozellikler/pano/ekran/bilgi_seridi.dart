@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 
+import 'package:go_router/go_router.dart';
+
 import '../../../cekirdek/tema.dart';
 import '../../doviz/veri/doviz.dart';
+import '../../eczane/veri/eczane.dart';
 import '../../hava/veri/hava.dart';
 
 /// Bölüm çubuğunun altındaki bilgi şeridi: hava ve döviz.
@@ -29,19 +32,21 @@ class BilgiSeridi extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final hava = ref.watch(havaSaglayici).asData?.value;
     final doviz = ref.watch(dovizSaglayici).asData?.value;
-    if (hava == null && doviz == null) {
+    final nobet = ref.watch(nobetSaglayici).asData?.value;
+    if (hava == null && doviz == null && nobet == null) {
       return const SliverToBoxAdapter(child: SizedBox.shrink());
     }
     return SliverToBoxAdapter(
-      child: _Serit(hava: hava, doviz: doviz),
+      child: _Serit(hava: hava, doviz: doviz, nobet: nobet),
     );
   }
 }
 
 class _Serit extends StatelessWidget {
-  const _Serit({required this.hava, required this.doviz});
+  const _Serit({required this.hava, required this.doviz, required this.nobet});
   final Hava? hava;
   final Doviz? doviz;
+  final Nobet? nobet;
 
   @override
   Widget build(BuildContext context) {
@@ -62,14 +67,31 @@ class _Serit extends StatelessWidget {
           child: SizedBox(
             width: double.infinity,
             child: Semantics(
-              label: _etiket(hava, doviz),
+              label: _etiket(hava, doviz, nobet),
               excludeSemantics: true,
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
                   children: [
                     if (hava != null) ...[
-                      _Simdi(hava: hava!, genis: genis),
+                      _Tiklanir(
+                        yol: '/hava',
+                        etiket:
+                            '${hava!.ilce} hava durumu, ayrıntı için dokunun',
+                        cocuk: _Simdi(hava: hava!, genis: genis),
+                      ),
+                      const SizedBox(width: 18),
+                    ],
+                    // Eczane dövizden ÖNCE: dar ekranda kaydırmadan
+                    // görünen ikinci yer burası ve nöbetçi eczane,
+                    // kurdan daha acil bir bilgi.
+                    if (nobet != null) ...[
+                      _Tiklanir(
+                        yol: '/eczane',
+                        etiket:
+                            'Nöbetçi eczaneler, listenin tamamı için dokunun',
+                        cocuk: _Nobet(nobet: nobet!),
+                      ),
                       const SizedBox(width: 18),
                     ],
                     if (doviz != null) ...[
@@ -139,6 +161,97 @@ class _Simdi extends StatelessWidget {
                   ? 'rüzgar ${s.ruzgar} km/s'
                   : '${s.ruzgarYonu} ${s.ruzgar} km/s',
             ),
+        ],
+      ],
+    );
+  }
+}
+
+/// Şeritteki tıklanır parça.
+///
+/// Şerit 67 piksel yer kaplıyor — masaüstünde katlamanın %8'i, ve o
+/// yer manşetten alınıyor. Ölçüldü. Bu bedeli bir "son durak" için
+/// ödemek israf; vitrin olarak ödemek başka. Her parça kendi tam
+/// sayfasına açılıyor.
+class _Tiklanir extends StatelessWidget {
+  const _Tiklanir({
+    required this.yol,
+    required this.etiket,
+    required this.cocuk,
+  });
+  final String yol;
+  final String etiket;
+  final Widget cocuk;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: etiket,
+      excludeSemantics: true,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => context.go(yol),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+            child: cocuk,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Nöbet parçası: ilk eczanenin adı ve ilçesi.
+///
+/// Şeritte YALNIZ BİRİ gösteriliyor; listenin tamamı `/eczane`'de.
+/// Yirmi üç eczaneyi şeride sığdırmaya çalışmak, hiçbirini okunur
+/// kılmazdı.
+class _Nobet extends StatelessWidget {
+  const _Nobet({required this.nobet});
+  final Nobet nobet;
+
+  @override
+  Widget build(BuildContext context) {
+    final r = Renkler.of(context);
+    final ilk = nobet.eczaneler.first;
+    return Row(
+      children: [
+        Container(width: 1, height: 20, color: r.cizgi),
+        const SizedBox(width: 16),
+        Icon(Icons.local_pharmacy_outlined, size: 16, color: r.patina),
+        const SizedBox(width: 7),
+        Text(
+          'NÖBETÇİ',
+          style: TextStyle(
+            fontFamily: Tema.sans,
+            fontSize: 10.5,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1,
+            color: r.solgun,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Text(
+          ilk.ad,
+          style: TextStyle(
+            fontFamily: Tema.sans,
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+            color: r.murekkep,
+          ),
+        ),
+        if (nobet.eczaneler.length > 1) ...[
+          const SizedBox(width: 7),
+          Text(
+            '+${nobet.eczaneler.length - 1}',
+            style: TextStyle(
+              fontFamily: Tema.sans,
+              fontSize: 12,
+              color: r.solgun,
+            ),
+          ),
         ],
       ],
     );
@@ -305,7 +418,7 @@ String gunAdi(DateTime t, {DateTime? simdi}) {
 /// Ekran okuyucu için tek cümle.
 ///
 /// Şeridin kendisi onlarca küçük metin; ayrı ayrı okunması gürültü.
-String _etiket(Hava? hava, Doviz? doviz) {
+String _etiket(Hava? hava, Doviz? doviz, Nobet? nobet) {
   final parcalar = <String>[];
 
   if (hava != null) {
@@ -328,6 +441,13 @@ String _etiket(Hava? hava, Doviz? doviz) {
     parcalar.add(
       'TCMB ${DateFormat('d MMMM', 'tr').format(doviz.tarih!)} kurları: '
       '${doviz.kurlar.map((k) => '${k.ad} ${bicim.format(k.satis)} lira').join(', ')}',
+    );
+  }
+
+  if (nobet != null && nobet.eczaneler.isNotEmpty) {
+    parcalar.add(
+      'Nöbetçi eczane: ${nobet.eczaneler.first.ad}'
+      '${nobet.eczaneler.length > 1 ? ' ve ${nobet.eczaneler.length - 1} eczane daha' : ''}',
     );
   }
 

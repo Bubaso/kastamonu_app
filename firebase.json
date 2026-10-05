@@ -68,6 +68,13 @@
         }
       },
       {
+        "source": "/api/eczane",
+        "function": {
+          "functionId": "eczane",
+          "region": "europe-west1"
+        }
+      },
+      {
         "source": "**",
         "destination": "/app.html"
       }

@@ -679,3 +679,31 @@ export const doviz = onRequest({ region: BOLGE }, async (req, res) => {
     res.status(502).json({ hata: "kurlar alınamadı" });
   }
 });
+
+// ─── Nöbetçi eczaneler ────────────────────────────────────────────────
+
+/** Bugünün nöbetçi eczaneleri.
+ *
+ * Önbellek KISA (10 dakika): nöbet günlük değişiyor ve okur gece
+ * yarısından sonra eski listeyi görmemeli. `guncel` yanlışsa liste
+ * zaten boş geliyor; o durumda önbellek daha da kısa tutuluyor ki oda
+ * sayfayı güncellediğinde okur beklemesin.
+ */
+export const eczane = onRequest({ region: BOLGE }, async (req, res) => {
+  try {
+    const { eczaneCek } = await import("./eczane.js");
+    const veri = await eczaneCek();
+    res.set(
+      "Cache-Control",
+      veri.guncel
+        ? "public, max-age=600, s-maxage=600, stale-while-revalidate=1800"
+        : "public, max-age=120",
+    );
+    res.set("Content-Type", "application/json; charset=utf-8");
+    res.status(200).send(JSON.stringify(veri));
+  } catch (hata) {
+    console.error("eczane", hata);
+    res.set("Cache-Control", "public, max-age=120");
+    res.status(502).json({ hata: "nöbetçi eczane listesi alınamadı" });
+  }
+});

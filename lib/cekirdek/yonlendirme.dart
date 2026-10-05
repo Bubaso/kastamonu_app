@@ -6,6 +6,8 @@ import 'package:go_router/go_router.dart';
 import '../ozellikler/anasayfa/ekran/anasayfa_ekrani.dart';
 import '../ozellikler/arama/ekran/arama_ekrani.dart';
 import '../ozellikler/haber/ekran/haber_ekrani.dart';
+import '../ozellikler/eczane/ekran/eczane_ekrani.dart';
+import '../ozellikler/hava/ekran/hava_ekrani.dart';
 import '../ozellikler/ilcem/ekran/ilcem_ekrani.dart';
 import '../ozellikler/inceleme/ekran/giris_ekrani.dart';
 import '../ozellikler/inceleme/ekran/inceleme_ekrani.dart';
@@ -65,6 +67,11 @@ final yonlendirici = GoRouter(
               builder: (c, s) =>
                   AnasayfaEkrani(kategoriSlug: s.pathParameters['slug']),
             ),
+            // Bilgi şeridinden gelinen sayfalar kabuğun İÇİNDE: okur
+            // nöbetçi eczaneye bakıp habere dönecek, alt çubuğu
+            // kaybetmemeli.
+            GoRoute(path: '/eczane', builder: (c, s) => const EczaneEkrani()),
+            GoRoute(path: '/hava', builder: (c, s) => const HavaEkrani()),
           ],
         ),
         StatefulShellBranch(
