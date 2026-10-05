@@ -277,3 +277,60 @@ test("özet yokken yayın adı kısayolu hâlâ çalışıyor", () => {
     kaynak_adi: "Taşköprü Postası (Google Haberler)",
   }), "yerel");
 });
+
+// ── Kaynak sırası belirleyici ───────────────────────────────────
+//
+// `tara` kaynakları paralel çekiyor. Eskiden her kaynak BİTTİĞİNDE
+// listeye ekliyordu, yani sıra ağ hızına bağlıydı. Küme üyelerinin
+// sırası da buna bağlı; tekilleştirme kümenin adresine baktığı için
+// aynı haber bir koşuda "zaten kayıtlı", ötekinde yeni görünüyordu.
+// Ölçümde 129 kümenin 7'si iki ardışık koşuda lider adresini
+// değiştirdi.
+
+test("tara: sonuç kaynak sırasını koruyor, bitiş sırasını değil", async () => {
+  const bugun = new Date().toISOString();
+  const yap = (ad) => ({
+    ad,
+    adres: `https://ornek/${ad}`,
+    // Yavaş kaynak ÖNCE tanımlı: bitiş sırası kullanılsaydı sona düşerdi.
+    coz: () => [{
+      baslik: `Kastamonu'da ${ad} haberi`, ozet: "Kastamonu'da bir olay oldu.",
+      adres: `https://ornek/${ad}/1`, gorsel: "https://foto/x.jpg",
+      kaynak_adi: ad, olusturuldu: bugun,
+    }],
+  });
+  const kaynaklar = [yap("yavas"), yap("hizli")];
+  const getir = async (u) => {
+    if (u.includes("yavas")) await new Promise((r) => setTimeout(r, 40));
+    return "<rss/>";
+  };
+
+  for (let i = 0; i < 3; i++) {
+    const { kayitlar } = await tara(kaynaklar, getir);
+    assert.deepEqual(
+      kayitlar.map((h) => h.kaynak_adi), ["yavas", "hizli"],
+      "sıra kaynak listesini izlemeli",
+    );
+  }
+});
+
+test("tara: düşen kaynak ötekilerin sırasını bozmuyor", async () => {
+  const bugun = new Date().toISOString();
+  const yap = (ad, patla = false) => ({
+    ad,
+    adres: `https://ornek/${ad}`,
+    coz: () => {
+      if (patla) throw new Error("besleme bozuk");
+      return [{
+        baslik: `Kastamonu'da ${ad} haberi`, ozet: "Kastamonu'da bir olay oldu.",
+        adres: `https://ornek/${ad}/1`, gorsel: "https://foto/x.jpg",
+        kaynak_adi: ad, olusturuldu: bugun,
+      }];
+    },
+  });
+  const { kayitlar, hatalar } = await tara(
+    [yap("bir"), yap("bozuk", true), yap("uc")], async () => "<rss/>");
+  assert.deepEqual(kayitlar.map((h) => h.kaynak_adi), ["bir", "uc"]);
+  assert.equal(hatalar.length, 1);
+  assert.equal(hatalar[0].kaynak, "bozuk");
+});

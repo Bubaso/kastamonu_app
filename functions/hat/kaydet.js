@@ -50,15 +50,48 @@ export function yazici({ taban = null, anahtar = null, fetchIsl = fetch } = {}) 
   };
 
   return {
-    /** Bu adres daha önce kaydedilmiş mi. */
+    /** Bu adresler daha önce kaydedilmiş mi.
+     *
+     * Sorgu PARÇA PARÇA gidiyor ve başarısızlık YUTULMUYOR. İkisi de
+     * ölçümle öğrenildi:
+     *
+     * Adresler tek bir `in.(...)` süzgecine dizildiğinde 145 kayıtla
+     * sorgu 37.639 karaktere çıkıyor — her URL sınırının çok
+     * üstünde. İstek düşüyordu.
+     *
+     * Düşen istekte eski kod boş küme dönüyordu, yani "hiçbir haber
+     * kayıtlı değil" diyordu. Sonuç: her koşu yayındaki haberleri
+     * yeniden sentezliyor, on iki model çağrısını boşa yakıyor ve
+     * hepsi veritabanının tekillik kısıtına çarpıp 409 ile
+     * düşüyordu. Dışarıdan "bugün yeni haber yok" gibi görünüyordu.
+     *
+     * Tekilleştirme çalışmıyorsa koşu DURMALI: sessizce para yakmak
+     * yerine hatayla dönmek doğru olan.
+     */
     async varMi(adresler) {
-      if (!adresler.length) return new Set();
-      const ic = adresler.map((a) => `"${a.replace(/"/g, '')}"`).join(",");
-      const y = await fetchIsl(
-        `${taban}/rest/v1/haberler?select=kaynak_url&kaynak_url=in.(${encodeURIComponent(ic)})`,
-        { headers: bas });
-      if (!y.ok) return new Set();
-      return new Set((await y.json()).map((h) => h.kaynak_url));
+      const benzersiz = [...new Set(adresler.filter(Boolean))];
+      if (!benzersiz.length) return new Set();
+
+      const PARCA = 25;
+      const parcalar = [];
+      for (let i = 0; i < benzersiz.length; i += PARCA) {
+        parcalar.push(benzersiz.slice(i, i + PARCA));
+      }
+
+      const kumeler = await Promise.all(parcalar.map(async (p) => {
+        const ic = p.map((a) => `"${a.replace(/"/g, "")}"`).join(",");
+        const y = await fetchIsl(
+          `${taban}/rest/v1/haberler?select=kaynak_url&kaynak_url=in.(${encodeURIComponent(ic)})`,
+          { headers: bas });
+        if (!y.ok) {
+          throw new DenetimHatasi(
+            `kayıtlı adresler okunamadı: ${y.status}. Tekilleştirme ` +
+            "çalışmadan koşmak yayındaki haberleri yeniden üretir.");
+        }
+        return (await y.json()).map((h) => h.kaynak_url);
+      }));
+
+      return new Set(kumeler.flat());
     },
 
     /** Kategori adlarını kimliklere çevirir. */

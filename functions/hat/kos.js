@@ -271,8 +271,16 @@ export async function kos({
   const yazilan = [], atlanan = [];
 
   async function birKume(o) {
-    const adres = o.uyeler.find((h) => h.adres)?.adres;
-    if (adres && zatenVar.has(adres)) {
+    // Kümenin BÜTÜN üye adreslerine bakılıyor, yalnız ilkine değil.
+    //
+    // Aynı olay hem yayının kendi beslemesinden hem Google
+    // Haberler'den geliyor ve ikisinin adresi farklı. Kayıtta
+    // bunlardan yalnız biri duruyor (kümenin o koşudaki lideri).
+    // Yalnız lidere bakmak, ötekinin kayıtlı olduğu durumu kaçırıyor
+    // ve haber ikinci kez sentezleniyordu — her koşuda boşa model
+    // çağrısı. Üyelerden HERHANGİ biri kayıtlıysa olay kayıtlıdır.
+    const adresler = o.uyeler.map((h) => h.adres).filter(Boolean);
+    if (adresler.some((a) => zatenVar.has(a))) {
       atlanan.push({ baslik: o.capa.baslik, sebep: "zaten kayıtlı" });
       return;
     }
