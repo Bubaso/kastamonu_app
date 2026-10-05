@@ -52,3 +52,6 @@ functions/node_modules/
 # Python
 __pycache__/
 *.pyc
+
+# Doğrulama ekran görüntüleri — depoya girmiyor.
+ekran/
