@@ -80,11 +80,27 @@ double baslikBenzerligi(String a, String b) {
 
 /// Benzerlik eşiği.
 ///
-/// Ölçülen iki çift arasında geniş bir boşluk var: gerçek tekrar 0,75,
-/// tekrar olmayan 0,45. Eşik ortaya değil, yanlış birleştirmeye karşı
-/// güvenli tarafa konuyor — bir tekrarı kaçırmak, iki ayrı haberi
-/// birleştirmekten daha az zararlı.
-const _benzerlikEsigi = 0.62;
+/// `functions/tekille.js` içindeki `ESIK` ile AYNI olmak zorunda: aynı
+/// kural iki yerde yazılı ve ayrışırlarsa sunucunun gizlediği bir
+/// kayıt uygulamada görünür.
+///
+/// 0,62'den indirildi. İlk değer iki çiftlik bir gözleme dayanıyordu
+/// (gerçek tekrar 0,75, tekrar olmayan 0,45). Daha geniş ölçüm başka
+/// bir tablo verdi: 89 haberlik canlı veride, diğer korumaları (aynı
+/// ilçe kümesi, aynı bölüm ailesi, 7 gün) geçen 292 çiftin yalnız beşi
+/// 0,30'un üstünde —
+///
+///   0,75  Daday yangını — aynı olay
+///   0,55  Cide'de kalp krizi — aynı olay
+///   0,45  kurt saldırısı — aynı olay
+///   0,44  Kastamonuspor maçı — aynı olay
+///   0,30  iki AYRI cenaze; "son yolculuğuna uğurlanacak" kalıbı
+///
+/// Yani 0,45 bir tekrar DEĞİL değil, tekrarın ta kendisiydi; eski eşik
+/// dört çiftin üçünü kaçırıyor ve okur aynı haberi iki kez görüyordu.
+/// 0,44 ile 0,30 arasındaki boşluk eşiğin yeri. Daha aşağısı iki ayrı
+/// cenazeyi birleştirir: Türkçe haber dili kalıplı.
+const _benzerlikEsigi = 0.40;
 
 /// Zaman penceresi — ve hangi zamana bakıldığı.
 ///

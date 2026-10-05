@@ -440,6 +440,42 @@ export const hatKos = onRequest(
       const eklenen = [];
       if (yaz && yz) {
         const { slugla } = await import("./hat/kaydet.js");
+        const { ilceBul } = await import("./hat/kos.js");
+        const { ayniOlay } = await import("./tekille.js");
+
+        // Tekilleştirmenin İKİNCİ katmanı: aynı olay, başka adres.
+        //
+        // Birincisi (`varMi`) adres eşitliğine bakıyor ve aynı olayın
+        // başka bir yayından, başka bir adresle gelen kaydını
+        // yakalayamıyor. Ölçümde "Cide'de balık tutarken kalp krizi
+        // geçiren kişi" yayındayken hat "Cide'de denizde kalp krizi
+        // geçiren balıkçı" diye ikinci bir kayıt üretti; benzerlik
+        // 0,55 ve ikisi de okura görünüyordu.
+        //
+        // Ölçüt uydurulmuyor: sayfada tekrarı gizleyen `ayniOlay`in
+        // ta kendisi kullanılıyor. Orada aynı sayılan iki haber
+        // burada da aynıdır — iki yerde iki farklı tanım olması,
+        // sayfanın gizlediği bir kaydın masaya düşmesi demekti.
+        //
+        // İlçe İKİ TARAFTA DA METİNDEN türetiliyor, kayıttaki bağdan
+        // değil. `ayniOlay` iki KAYITLI satırı karşılaştırmak için
+        // yazılmış ve ilçeyi `haber_ilce` bağından okuyor; oysa o bağ
+        // ayrı bir süreçle doluyor ve seyrek: ölçümde 81 kaydın yalnız
+        // 18'inde onaylı bağ vardı. Adaya başlıktan ilçe türetip
+        // kayıtlıya bağından bakmak karşılaştırmayı asimetrik yapıyor
+        // ve kural ters tepiyordu — ölçüldü: başlıklar BİREBİR aynıyken
+        // (benzerlik 1,00) `ayniOlay` false döndü, çünkü aday {Cide}
+        // diyordu, kayıtlı boş. Haber de ikinci kez yazılmaya kalkıp
+        // slug çakışmasına düştü.
+        const karsilastirilabilir = (o) => ({
+          id: o.id ?? null,
+          baslik: o.baslik,
+          olusturuldu: o.olusturuldu,
+          kategoriler: o.kategoriler,
+          haber_ilce: [...ilceBul(o.baslik, o.spot ?? "")]
+            .map((ad) => ({ onaylandi: true, ilceler: { ad } })),
+        });
+        const oncekiler = (await yz.sonKayitlar(7)).map(karsilastirilabilir);
         // Görsel kopyalama da paralel: her biri bir indirme + bir
         // yükleme, sırayla yapıldığında koşunun yarısını yiyor.
         const isler = sonuc.yazilan.map(({ sentez, olay, kapsam }) => async () => {
@@ -459,6 +495,23 @@ export const hatKos = onRequest(
             // Ulusal haber kendi bölümüne giriyor: anasayfada manşete
             // çıkamasın ve yerel haberin yerini almasın diye.
             const katAd = kapsam === "ulusal" ? "Türkiye" : sentez.kategori;
+
+            // Yazmadan önce: bu olay zaten kayıtlı mı?
+            const aday = karsilastirilabilir({
+              baslik: sentez.baslik,
+              spot: sentez.spot,
+              olusturuldu: new Date().toISOString(),
+              kategoriler: { ad: katAd },
+            });
+            const ayni = oncekiler.find((o) => ayniOlay(aday, o));
+            if (ayni) {
+              sonuc.atlanan.push({
+                baslik: sentez.baslik,
+                sebep: `aynı olay zaten kayıtlı: ${String(ayni.baslik).slice(0, 60)}`,
+              });
+              return;
+            }
+
             const k = await yz.ekle(satirKur(
               sentez, olay, sonuc.katMap.get(katAd),
               { adres: kopya, kaynak: sec.kaynak }));

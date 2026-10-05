@@ -54,7 +54,33 @@ export function benzerlik(a, b) {
   return ortak / (x.size + y.size - ortak);
 }
 
-export const ESIK = 0.62;
+/** İki başlığın aynı olayı anlattığına karar verdiren en az benzerlik.
+ *
+ * 0,62'den indirildi. Gerekçe ölçüm, tahmin değil: 89 haberlik canlı
+ * veride `ayniOlay`in DİĞER korumalarını (aynı ilçe kümesi, aynı bölüm
+ * ailesi, 7 gün) geçen 292 çift var ve bunların yalnız beşi 0,30'un
+ * üstünde:
+ *
+ *   0,75  Daday yangını — aynı olay
+ *   0,55  Cide'de kalp krizi — aynı olay
+ *   0,45  kurt saldırısı — aynı olay
+ *   0,44  Kastamonuspor maçı — aynı olay
+ *   0,30  "Pakize Dikoğlu son yolculuğuna uğurlanacak" ile
+ *         "Dilruba Arslan son yolculuğuna uğurlanacak" — AYRI olaylar
+ *
+ * 0,44 ile 0,30 arasında temiz bir boşluk var; eşik oraya kondu.
+ * Daha aşağısı iki ayrı cenazeyi birleştirirdi: Türkçe haber dili
+ * kalıplı, "son yolculuğuna uğurlanacak" tek başına benzerlik
+ * üretiyor. 0,62 ise aynı olayın iki sentezini kaçırıyordu — ölçülen
+ * dört çiftin üçü o eşiğin altındaydı ve okur aynı haberi iki kez
+ * görüyordu.
+ *
+ * Tek bir sabit: hem sayfadaki tekrarı gizleyen `tekille` hem hattın
+ * yazmadan önceki denetimi (bkz. `functions/index.js`) bunu kullanıyor.
+ * İki yerde iki tanım olsaydı, sayfanın gizlediği bir kayıt inceleme
+ * masasına düşerdi.
+ */
+export const ESIK = 0.40;
 const PENCERE_GUN = 7;
 
 /** Haberin onaylı ilçeleri. */
