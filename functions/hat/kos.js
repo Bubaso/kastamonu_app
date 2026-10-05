@@ -99,6 +99,12 @@ bırak; uydurarak doldurma.
 6. kullanilan_kaynaklar alanına kayıtlardaki "kaynak" değerlerini BİREBİR \
 yaz — yayın adını, adresi değil.
 
+GÖVDE: Tek cümlelik haber olmaz. Elindeki bilgiden 5N1K'nın hepsini \
+çıkar ve her birini metne yerleştir — NE oldu, KİM, NEREDE, NE ZAMAN, \
+NASIL, NEDEN. Kaynaklarda olmayanı yazma; eksik kalan varsa onu atla, \
+ama elindekinin hepsini kullan. En az üç paragraf yaz, paragrafları boş \
+satırla ayır.
+
 Üslup: Türkçe, haber dili, sade. Başlık tek cümle. Spot iki cümleyi \
 geçmesin.`;
 
@@ -213,6 +219,7 @@ export async function kos({
   yazici: yz = null,
   kuru = true,
   enCok = 12,
+  govdeDoldur = null,
 } = {}) {
   const { kayitlar, hatalar } = await taraIsl();
   const olaylar = kumele(kayitlar);
@@ -261,6 +268,13 @@ export async function kos({
       continue;
     }
     try {
+      // Gövdeler sentezden HEMEN ÖNCE dolduruluyor. RSS özeti ~150
+      // karakter ve onunla ancak tek cümlelik haber çıkıyor; haber
+      // sayfasında 900-1300 karakter var. Yalnız sentezlenecek kümeler
+      // için çekiliyor, her ham kayıt için değil.
+      if (govdeDoldur) {
+        o.uyeler = await Promise.all(o.uyeler.map((h) => govdeDoldur(h)));
+      }
       const s = kunyeyiDuzelt(await cagir(o), o);
       dogrula(s, o);
       yazilan.push({ sentez: s, olay: o, durum: durum(s) });

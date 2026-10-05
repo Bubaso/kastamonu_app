@@ -425,7 +425,7 @@ export const hatKos = onRequest(
 
     const yaz = req.query.yaz === "1";
     try {
-      const { tara } = await import("./hat/kaynak.js");
+      const { govdeDoldur, tara } = await import("./hat/kaynak.js");
       const { kos } = await import("./hat/kos.js");
       const { cagirici } = await import("./hat/gemini.js");
       const { gorselKopyala, gorselSec, satirKur, yazici } =
@@ -433,8 +433,8 @@ export const hatKos = onRequest(
 
       const yz = yaz ? yazici() : null;
       const sonuc = await kos({
-        tara, cagir: cagirici(), yazici: yz, kuru: !yaz,
-        enCok: Math.min(Number(req.query.adet) || 12, 25),
+        tara, cagir: cagirici(), yazici: yz, kuru: !yaz, govdeDoldur,
+        enCok: Math.min(Number(req.query.adet) || 20, 40),
       });
 
       const eklenen = [];
