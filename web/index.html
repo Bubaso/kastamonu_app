@@ -33,6 +33,92 @@
   <meta name="description" content="Kastamonu ve ilçeleriyle ilgili haberler.">
   <!-- SOCIAL_META_END -->
   <link rel="manifest" href="manifest.json">
+
+  <!--
+    SSR yedeğinin görünümü.
+
+    Neden burada
+    ────────────
+    Ana sayfa ve haber sayfaları sunucuda bir HTML gövdesi basıyor
+    (`functions/index.js`, `<div id="ssr">`). Sebebi arama motoru:
+    Flutter CanvasKit metni TUVALE çiziyor, tarayıcı robotu tuvalden
+    metin okuyamıyor. O gövde olmasa hiçbir haber dizine girmez.
+
+    Ama o gövde CanvasKit inene kadar — ölçümde yaklaşık bir saniye —
+    EKRANDA duruyor. Stilsizken tarayıcının varsayılanıyla çiziliyordu:
+    Times New Roman, madde imli bağlantı listesi, mavi altı çizili
+    yazı. Okur siteyi her açtığında önce bozuk bir sayfa görüyordu.
+
+    Buradaki stil o saniyeyi markalı bir yükleme ekranına çeviriyor.
+    Metin GİZLENMİYOR: gizli metin hem arama motoru açısından riskli,
+    hem de JavaScript kapalı okuru sayfasız bırakır. Görünür ve
+    okunabilir kalıyor, yalnız siteye benziyor.
+
+    Sistem yazı tipleri bilerek: uygulamanın kendi fontlarını buraya
+    çağırmak, CanvasKit'le yarışan iki font indirmesi daha demek.
+  -->
+  <style>
+    :root {
+      --zemin: #FAF7F2;
+      --murekkep: #14120F;
+      --solgun: #6B6259;
+      --cizgi: #DDD5C8;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --zemin: #14120F;
+        --murekkep: #F3EFE8;
+        --solgun: #9C9286;
+        --cizgi: #2A241D;
+      }
+    }
+    html, body { margin: 0; padding: 0; background: var(--zemin); }
+    #ssr {
+      max-width: 1080px;
+      margin: 0 auto;
+      padding: 28px 18px 48px;
+      box-sizing: border-box;
+      color: var(--murekkep);
+      font-family: Georgia, "Times New Roman", serif;
+      /* Açılış anında göz zıplamasın diye metin yumuşak giriyor. */
+      animation: ssrGir .25s ease-out both;
+    }
+    @keyframes ssrGir { from { opacity: 0 } to { opacity: 1 } }
+    #ssr h1 {
+      margin: 0 0 6px;
+      font-size: 30px;
+      font-weight: 700;
+      letter-spacing: -.01em;
+    }
+    #ssr > p {
+      margin: 0 0 20px;
+      padding-bottom: 18px;
+      border-bottom: 1px solid var(--cizgi);
+      color: var(--solgun);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      font-size: 13.5px;
+      line-height: 1.5;
+    }
+    #ssr ul { margin: 0; padding: 0; list-style: none; }
+    #ssr li { border-bottom: 1px solid var(--cizgi); }
+    #ssr li a {
+      display: block;
+      padding: 13px 0;
+      color: var(--murekkep);
+      font-size: 19px;
+      line-height: 1.3;
+      text-decoration: none;
+    }
+    #ssr li a:hover { text-decoration: underline; }
+    /* Haber sayfasının gövdesi de aynı yedeği kullanıyor. */
+    #ssr article h1 { font-size: 27px; margin-bottom: 12px; }
+    #ssr article p { margin: 0 0 14px; font-size: 17px; line-height: 1.6; }
+    #ssr img { max-width: 100%; height: auto; }
+
+    /* Flutter açıldığında yedek DOM'dan kalkmıyor, yalnız çizilmiyor:
+       robot ham HTML'i zaten okudu, okurun iki kopya görmesi gereksiz. */
+    body.hazir #ssr { display: none; }
+  </style>
 </head>
 <body>
   <!--
@@ -44,5 +130,18 @@
     * https://docs.flutter.dev/platform-integration/web/initialization
   -->
   <script src="flutter_bootstrap.js" async></script>
+  <script>
+    // Flutter görünümü DOM'a düştüğünde yedeği gizle. `flutter-view`
+    // öğesi ilk kare çizilmeden hemen önce ekleniyor.
+    (function () {
+      var g = document.documentElement;
+      function bitir() { document.body.classList.add("hazir"); }
+      if (document.querySelector("flutter-view")) return bitir();
+      var gozcu = new MutationObserver(function () {
+        if (document.querySelector("flutter-view")) { gozcu.disconnect(); bitir(); }
+      });
+      gozcu.observe(g, { childList: true, subtree: true });
+    })();
+  </script>
 </body>
 </html>
