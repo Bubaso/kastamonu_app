@@ -194,6 +194,17 @@ const ELE = [
   "borsa", "dolar kuru", "kripto",
 ];
 
+/** Adında yer adı geçmeyen Kastamonu yayınları.
+ *
+ * Çoğu yerel gazetenin adında şehir ya da ilçe adı var ve `YERLER`
+ * onları yakalıyor. Bu liste yakalayamadıkları için: ölçümde "Açıksöz
+ * Gazetesi" eleniyordu — Kastamonu'nun köklü gazetelerinden.
+ *
+ * Liste keşifle büyüyor, hafızadan değil: Google Haberler hangi
+ * yayınların Kastamonu yazdığını gösteriyor, buraya onlar giriyor.
+ */
+const YEREL_YAYINLAR = ["aciksoz"];
+
 /** Haberin kapsamı: 'yerel', 'ulusal' ya da null (alınmaz).
  *
  * `yerelKaynak`, haberi Kastamonu gazetesinin yayımladığını söylüyor.
@@ -207,6 +218,15 @@ const ELE = [
  */
 export function kapsam(h, { yerelKaynak = false } = {}) {
   if (yerelMi(h)) return "yerel";
+
+  // Google Haberler özet vermiyor, yalnız başlık ve YAYIN ADI veriyor.
+  // Yayının kendisi Kastamonu gazetesiyse haber de yereldir —
+  // ölçümde "KATSO'da Fındıkoğlu yeniden başkan seçildi" tam olarak
+  // bu yüzden eleniyordu: başlıkta Kastamonu geçmiyor ama haberi
+  // Taşköprü Postası yazmış.
+  const yayin = sade(h.kaynak_adi ?? "");
+  if (YERLER.some((y) => yayin.includes(y))) return "yerel";
+  if (YEREL_YAYINLAR.some((y) => yayin.includes(y))) return "yerel";
 
   const m = sade(`${h.baslik} ${h.ozet}`);
   if (ELE.some((k) => m.includes(k))) return null;

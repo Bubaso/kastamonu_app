@@ -203,3 +203,30 @@ test("yerel gazetenin siyaset haberi yine eleniyor", () => {
   const h = { baslik: "CHP Genel Başkanı aileyi ziyaret etti", ozet: "" };
   assert.equal(kapsam(h, { yerelKaynak: true }), null);
 });
+
+test("yayın adı Kastamonu gazetesiyse haber yerel", () => {
+  // Google Haberler özet vermiyor; elde yalnız başlık ve yayın adı var.
+  assert.equal(kapsam({
+    baslik: "KATSO'da Fındıkoğlu yeniden başkan seçildi", ozet: "",
+    kaynak_adi: "Taşköprü Postası (Google Haberler)",
+  }), "yerel");
+  assert.equal(kapsam({
+    baslik: "Belediye personelinin açılışına yoğun ilgi!", ozet: "",
+    kaynak_adi: "Kastamonu Güncel (Google Haberler)",
+  }), "yerel");
+});
+
+test("ulusal yayının Kastamonu geçmeyen haberi yine alınmıyor", () => {
+  assert.equal(kapsam({
+    baslik: "İzmir'de trafik kazası", ozet: "",
+    kaynak_adi: "Hürriyet (Google Haberler)",
+  }), null);
+});
+
+test("adında yer adı geçmeyen yerel gazete tanınıyor", () => {
+  // Açıksöz, Kastamonu'nun köklü gazetelerinden; adında yer adı yok.
+  assert.equal(kapsam({
+    baslik: "Belediye personelinin açılışına yoğun ilgi!", ozet: "",
+    kaynak_adi: "Açıksöz Gazetesi (Google Haberler)",
+  }), "yerel");
+});
