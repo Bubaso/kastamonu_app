@@ -68,19 +68,27 @@ function kayit({ baslik, ozet, adres, yayin, tarih }) {
   };
 }
 
+/** Standart RSS: başlık + gerçek özet + doğrudan adres.
+ *
+ * Haberler.com ve yerel Kastamonu gazeteleri aynı biçimi veriyor.
+ */
+export function rssOku(xml, yayin) {
+  return ogeler(xml).map((o) => kayit({
+    baslik: etiket(o, "title"),
+    ozet: etiket(o, "description"),
+    adres: etiket(o, "link"),
+    yayin,
+    tarih: temizle(etiket(o, "pubDate")),
+  })).filter((h) => h.baslik);
+}
+
 /** Haberler.com'un Kastamonu RSS'i.
  *
  * `description` gerçek bir özet taşıyor (~200 karakter), bu yüzden
  * haber sayfasını ayrıca çekmeye gerek kalmıyor.
  */
 export function haberlerCom(xml) {
-  return ogeler(xml).map((o) => kayit({
-    baslik: etiket(o, "title"),
-    ozet: etiket(o, "description"),
-    adres: etiket(o, "link"),
-    yayin: "Haberler.com / Kastamonu",
-    tarih: temizle(etiket(o, "pubDate")),
-  })).filter((h) => h.baslik);
+  return rssOku(xml, "Haberler.com / Kastamonu");
 }
 
 /** Google Haberler RSS'i.
@@ -115,6 +123,14 @@ export const KAYNAKLAR = [
     ad: "Haberler.com",
     adres: "https://rss.haberler.com/rss.asp?kategori=kastamonu",
     coz: haberlerCom,
+  },
+  {
+    // Yerel gazete: ilçe haberlerini ulusal toplayıcılar yazmıyor,
+    // yerel basın yazıyor. Google Haberler keşfinde çıktı ve kendi
+    // beslemesinin 40 öğesinin 40'ında gerçek özet var.
+    ad: "Kastamonu İstiklal",
+    adres: "https://www.kastamonuistiklal.com/rss",
+    coz: (x) => rssOku(x, "Kastamonu İstiklal Gazetesi"),
   },
   {
     ad: "Google Haberler",
