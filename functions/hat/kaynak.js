@@ -173,3 +173,49 @@ export async function tara(kaynaklar = KAYNAKLAR, getir = agdanGetir) {
   }));
   return { kayitlar, hatalar };
 }
+
+// ── Haber gövdesi ────────────────────────────────────────────────
+//
+// RSS özeti ~150 karakter; bununla ancak tek cümlelik haber yazılıyor.
+// Haber sayfasında ise 900-1300 karakter gerçek metin var. 5N1K'nın
+// tamamını çıkarabilmek için gövde oradan alınıyor.
+//
+// Yalnız sentezlenecek kümeler için çağrılıyor: her ham kaydın
+// sayfasını çekmek yüzlerce gereksiz istek demek.
+
+/** Sayfanın kendi tanıtım/uyarı metinleri. Haberin parçası değiller. */
+const KALIP = /yorumlar|çerez|telif|tüm hakları|editöryal|abone ol|künye|kullanım şartları|en kapsamlı haber/i;
+
+/** HTML'den haber paragraflarını ayıklar.
+ *
+ * Süzgeçler ölçümle kondu: menü blobu tek bir `<p>` içinde 16 bin
+ * karakter geliyordu, site tanıtımları ise cümle gibi görünüyordu.
+ */
+export function govdeCikar(html) {
+  return [...String(html ?? "").matchAll(/<p[^>]*>([\s\S]*?)<\/p>/g)]
+    .map((m) => temizle(m[1]))
+    .filter((t) =>
+      t.length >= 60 && t.length <= 1200 &&
+      /[.!?]\s*$/.test(t) &&
+      (t.match(/[.!?]/g) ?? []).length <= 12 &&
+      !KALIP.test(t))
+    .slice(0, 8)
+    .join("\n\n");
+}
+
+/** Kaydın gövdesini haber sayfasından doldurur.
+ *
+ * Başarısız olursa kayıt olduğu gibi dönüyor: tek bir sayfanın
+ * çekilememesi kümeyi düşürmemeli, elde özet zaten var.
+ */
+export async function govdeDoldur(kayit, getir = agdanGetir) {
+  const u = kayit.adres ?? "";
+  // Google Haberler bağlantısı gerçek adrese yönlenmiyor.
+  if (!u.startsWith("http") || u.includes("news.google.com")) return kayit;
+  try {
+    const g = govdeCikar(await getir(u));
+    return g.length > (kayit.ozet ?? "").length ? { ...kayit, ozet: g } : kayit;
+  } catch {
+    return kayit;
+  }
+}

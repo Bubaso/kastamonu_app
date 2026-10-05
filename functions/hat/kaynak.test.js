@@ -86,3 +86,49 @@ test("tara: bir kaynak düşse de öbürü geliyor", async () => {
   assert.equal(hatalar.length, 1);
   assert.equal(hatalar[0].kaynak, "bozuk");
 });
+
+import { govdeCikar, govdeDoldur } from "./kaynak.js";
+
+const SAYFA = `<html><body>
+<p>Menü Son Dakika Güncel Dünya Ekonomi Spor Magazin Yerel Politika Finans Teknoloji Kültür Sanat Kadın Moda Otomobil Yaşam Sağlık Turizm Eğitim 3.Sayfa Döviz Altın Hava Namaz Burç Puan Fikstür Canlı Skor Video Foto Galeri İletişim Künye Reklam.</p>
+<p>Olay, Cide ilçesine bağlı Gideros koyu açıklarında meydana geldi. Arkadaşının teknesiyle denize açılan Mustafa Türcan rahatsızlandı.</p>
+<p>Kısa.</p>
+<p>Haberler.com'da yer alan yorumlar, kullanıcıların kişisel görüşlerini yansıtır ve editöryal politika ile örtüşmeyebilir bu nedenle sorumluluk kabul edilmez.</p>
+<p>Ekiplerin müdahalesine rağmen Türcan kurtarılamadı. Cenaze, otopsi için Kastamonu Adli Tıp Kurumuna gönderildi.</p>
+</body></html>`;
+
+test("gövde: menü ve site kalıpları eleniyor", () => {
+  const g = govdeCikar(SAYFA);
+  assert.ok(g.includes("Gideros"));
+  assert.ok(g.includes("otopsi"));
+  assert.ok(!g.includes("Fikstür"), "menü blobu girmemeli");
+  assert.ok(!g.includes("yorumlar"), "site kalıbı girmemeli");
+  assert.ok(!g.includes("Kısa."), "çok kısa paragraf girmemeli");
+});
+
+test("gövde: boş girdi çökertmiyor", () => {
+  assert.equal(govdeCikar(""), "");
+  assert.equal(govdeCikar(null), "");
+});
+
+test("govdeDoldur: Google bağlantısı atlanıyor", async () => {
+  // O adres gerçek sayfaya yönlenmiyor; çekmek boşa istek.
+  const kayit = { adres: "https://news.google.com/rss/articles/X", ozet: "kısa" };
+  let cagrildi = 0;
+  const d = await govdeDoldur(kayit, async () => { cagrildi++; return SAYFA; });
+  assert.equal(cagrildi, 0);
+  assert.equal(d.ozet, "kısa");
+});
+
+test("govdeDoldur: daha uzun gövde özetin yerine geçiyor", async () => {
+  const kayit = { adres: "https://www.haberler.com/x/", ozet: "Kısa RSS özeti." };
+  const d = await govdeDoldur(kayit, async () => SAYFA);
+  assert.ok(d.ozet.length > 200);
+  assert.ok(d.ozet.includes("Gideros"));
+});
+
+test("govdeDoldur: çekim düşerse kayıt bozulmuyor", async () => {
+  const kayit = { adres: "https://www.haberler.com/x/", ozet: "RSS özeti" };
+  const d = await govdeDoldur(kayit, async () => { throw new Error("503"); });
+  assert.equal(d.ozet, "RSS özeti");
+});
