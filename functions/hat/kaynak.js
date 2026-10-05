@@ -219,14 +219,25 @@ const YEREL_YAYINLAR = ["aciksoz"];
 export function kapsam(h, { yerelKaynak = false } = {}) {
   if (yerelMi(h)) return "yerel";
 
+  // Yayın adına dayanan kısayol YALNIZCA metin yokken.
+  //
   // Google Haberler özet vermiyor, yalnız başlık ve YAYIN ADI veriyor.
-  // Yayının kendisi Kastamonu gazetesiyse haber de yereldir —
-  // ölçümde "KATSO'da Fındıkoğlu yeniden başkan seçildi" tam olarak
-  // bu yüzden eleniyordu: başlıkta Kastamonu geçmiyor ama haberi
+  // Elde başka hiçbir sinyal olmadığı için yayının kendisi ölçüt
+  // oluyor: ölçümde "KATSO'da Fındıkoğlu yeniden başkan seçildi" tam
+  // bu yüzden eleniyordu — başlıkta Kastamonu geçmiyor ama haberi
   // Taşköprü Postası yazmış.
+  //
+  // Özet VARSA bu kısayol yanlış: "Taşköprü Postası" adı `YERLER`e
+  // takılıyor ve gazetenin Çorum-Samsun yolundaki kazayı anlatan
+  // haberi de Kastamonu haberi sayılıyordu. Metin elimizdeyken karar
+  // metnin: hangi gazetenin yazdığı, haberin nereye ait olduğunu
+  // belirlemez.
+  const ozetVar = (h.ozet ?? "").trim().length > 40;
   const yayin = sade(h.kaynak_adi ?? "");
-  if (YERLER.some((y) => yayin.includes(y))) return "yerel";
-  if (YEREL_YAYINLAR.some((y) => yayin.includes(y))) return "yerel";
+  if (!ozetVar) {
+    if (YERLER.some((y) => yayin.includes(y))) return "yerel";
+    if (YEREL_YAYINLAR.some((y) => yayin.includes(y))) return "yerel";
+  }
 
   const m = sade(`${h.baslik} ${h.ozet}`);
   if (ELE.some((k) => m.includes(k))) return null;
@@ -266,6 +277,24 @@ export const KAYNAKLAR = [
     yerel: true,
   },
   {
+    // Taşköprü Postası, Kastamonu'yu en çok yazan yayın: Google
+    // Haberler'in Kastamonu aramasındaki öğelerin yarısından fazlası
+    // bu gazetenin. Kendi beslemesinde 30 öğenin 30'unda görsel,
+    // 28'inde gerçek özet var.
+    //
+    // `yerel: true` DEĞİL ve bilerek: bu gazete Kastamonu dışını da
+    // yazıyor (Çorum-Samsun yolundaki kaza, ulusal zam haberleri).
+    // Kapsamı metin belirliyor, yayın adı değil.
+    ad: "Taşköprü Postası",
+    adres: "https://www.taskoprupostasi.com/rss",
+    coz: (x) => rssOku(x, "Taşköprü Postası"),
+  },
+  {
+    // Keşif kanalı: hangi yayınların Kastamonu yazdığını buradan
+    // öğreniyoruz. Aralıklı olarak 503 veriyor — üç koşunun ikisinde
+    // düştü, üçüncüsünde çalıştı — yani güvenilir değil ama kalıcı
+    // olarak engelli de değil. `tara` düşen kaynakta koşuyu
+    // durdurmuyor; bu kaynak varsa fazladan, yoksa eksik değil.
     ad: "Google Haberler",
     adres: "https://news.google.com/rss/search?q=Kastamonu&hl=tr&gl=TR&ceid=TR:tr",
     coz: googleHaberler,

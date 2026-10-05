@@ -230,3 +230,50 @@ test("adında yer adı geçmeyen yerel gazete tanınıyor", () => {
     kaynak_adi: "Açıksöz Gazetesi (Google Haberler)",
   }), "yerel");
 });
+
+// ── Yayın adı kısayolunun sınırı ────────────────────────────────
+//
+// Kısayol Google Haberler için var: orada özet yok, elde yalnız başlık
+// ve yayın adı kalıyor. Doğrudan beslemede özet VAR ve kısayol zarar
+// veriyordu: "Taşköprü Postası" adı `YERLER`e takıldığı için gazetenin
+// Çorum-Samsun yolundaki kazayı anlatan haberi de Kastamonu haberi
+// sayılıyordu — yani portal başka ilin kazasını kendi haberi gibi
+// yayımlayacaktı.
+
+test("yerel gazetenin başka ildeki haberi yerel sayılmıyor", () => {
+  assert.equal(kapsam({
+    baslik: "İki otomobil çarpıştı: Anne öldü, 2 çocuk yaralandı",
+    ozet: "Çorum-Samsun kara yolunda iki otomobilin çarpışması sonucu " +
+          "33 yaşındaki anne hayatını kaybetti, iki çocuğu yaralandı.",
+    kaynak_adi: "Taşköprü Postası",
+  }), null);
+});
+
+test("yerel gazetenin Kastamonu haberi yerel", () => {
+  assert.equal(kapsam({
+    baslik: "Kastamonu İstanbul'a taşınıyor: Geri sayım başladı",
+    ozet: "20. Kastamonu Tanıtım Günleri, 8-11 Ekim tarihlerinde " +
+          "Atatürk Havalimanı Millet Bahçesi'nde düzenlenecek.",
+    kaynak_adi: "Taşköprü Postası",
+  }), "yerel");
+});
+
+test("yerel gazetenin ulusal gündem haberi ulusal kalıyor", () => {
+  // Kastamonulunun cebine dokunuyor ama Kastamonu haberi değil:
+  // kendi bölümüne, kotalı biçimde girmeli.
+  assert.equal(kapsam({
+    baslik: "Milyonları ilgilendiriyor: Memur ve emeklinin zam hesabı değişti",
+    ozet: "Memur ve memur emeklilerinin ocak maaş zammında ilk üç aylık " +
+          "tablo oluştu. Kümülatif enflasyon farkı belli oldu.",
+    kaynak_adi: "Taşköprü Postası",
+  }), "ulusal");
+});
+
+test("özet yokken yayın adı kısayolu hâlâ çalışıyor", () => {
+  // Google Haberler'de durum bu: KATSO haberi başlıkta Kastamonu
+  // geçmediği için eleniyordu.
+  assert.equal(kapsam({
+    baslik: "KATSO'da Fındıkoğlu yeniden başkan seçildi", ozet: "",
+    kaynak_adi: "Taşköprü Postası (Google Haberler)",
+  }), "yerel");
+});
