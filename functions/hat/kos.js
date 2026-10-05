@@ -198,11 +198,16 @@ export async function kos({
   const { kayitlar, hatalar } = await taraIsl();
   const olaylar = kumele(kayitlar);
 
-  // Daha çok kaynağın yazdığı olay daha önemli ve sentezin kazancı da
-  // orada en yüksek: tek kaynaklı bir kaydı "birleştirmenin" anlamı yok.
+  // Sıralama ÖNCE metne bakıyor, sonra kaynak sayısına.
+  //
+  // Sebebi ölçümle çıktı: yalnız kaynak sayısına göre sıralandığında
+  // en büyük kümelerin hepsi Google Haberler kaynaklıydı ve onlarda
+  // metin yok — koşu sıfır haber üretti. Metni olan küme, kaynağı az
+  // olsa bile yazılabilir bir haber demek.
+  const metinli = (o) => o.uyeler.some((h) => (h.ozet ?? "").trim().length > 40);
   const sira = olaylar
     .slice()
-    .sort((a, b) => b.uyeler.length - a.uyeler.length)
+    .sort((a, b) => (metinli(b) - metinli(a)) || (b.uyeler.length - a.uyeler.length))
     .slice(0, enCok);
 
   let zatenVar = new Set();
