@@ -337,18 +337,65 @@ export const anasayfaRender = onRequest({ region: BOLGE }, async (req, res) => {
       gorsel: haberler[0]?.gorsel_url,
     });
 
-    // İç bağlantılar: tarayıcının derin sayfalara ulaşabilmesi için tek
-    // yol bu. Ana sayfa SSR'siz kalırsa hiçbir haber keşfedilemiyor.
+    // Ana sayfa artık haber LİSTESİ basmıyor.
+    //
+    // Basıyordu ve okur siteyi her açtığında, CanvasKit inene kadar o
+    // listeyi görüyordu. Stillendirmek yetmedi: liste okunacak sayfa
+    // değil, bekleme ekranı; görünmesi gereken şey hiç değil.
+    //
+    // Gizlemek de doğru değildi — gizli metin arama motoru açısından
+    // riskli. Üçüncü yol: makineye makinenin biçiminde vermek.
+    //
+    //   • Haber listesi JSON-LD `ItemList` olarak <head>'de. Yapısal
+    //     veri zaten MAKİNE İÇİN tasarlanmış, görünmemesi kuralın
+    //     kendisi; "gizli metin" sayılmıyor.
+    //   • Keşif zaten sitemap.xml'de: ölçüldü, 81 adresin tamamı
+    //     orada ve `robots.txt` artık onu açıkça bildiriyor.
+    //   • İç bağlantı katmanı kategori sayfalarında: onlar SSR'da
+    //     haber bağlantılarını basıyor ve ana sayfa onlara bağlanıyor.
+    //
+    // Yani "ana sayfa SSR'siz kalırsa hiçbir haber keşfedilemez"
+    // doğru değilmiş; keşfin üç ayağı da ayakta.
+    const kategoriler = await supabase("kategoriler?select=ad,slug&order=sira");
+
+    const listeVerisi = {
+      "@context": "https://schema.org",
+      "@type": "CollectionPage",
+      name: SITE_ADI,
+      description: SITE_ACIKLAMA,
+      url: TABAN + "/",
+      mainEntity: {
+        "@type": "ItemList",
+        numberOfItems: haberler.length,
+        itemListElement: haberler.map((h, i) => ({
+          "@type": "ListItem",
+          position: i + 1,
+          url: `${TABAN}/haber/${h.slug}`,
+          name: h.baslik,
+        })),
+      },
+    };
+
+    // Ekranda duran şey: uygulamanın kendi başlığının durağan kopyası.
+    // Flutter açılınca aynı başlık tuvalde çiziliyor, dolayısıyla
+    // geçiş göze çarpmıyor — "sayfa yükleniyor" değil, "sayfa açıldı"
+    // hissi veren tek kurgu bu.
     const govde = [
-      `<h1>${kacir(SITE_ADI)}</h1>`,
-      `<p>${kacir(SITE_ACIKLAMA)}</p>`,
-      "<ul>",
-      ...haberler.map((h) =>
-        `<li><a href="/haber/${kacir(h.slug)}">${kacir(h.baslik)}</a></li>`),
-      "</ul>",
+      '<div class="kabuk">',
+      `  <div class="kabuk-ad">${kacir(SITE_ADI)}</div>`,
+      '  <nav class="kabuk-bolumler">',
+      ...kategoriler.map((k) =>
+        `    <a href="/kategori/${kacir(k.slug)}">${kacir(k.ad)}</a>`),
+      "  </nav>",
+      "</div>",
     ].join("\n");
 
-    yanitla(res, sayfaKur(meta, govde));
+    const yapisal =
+      '<script type="application/ld+json">' +
+      JSON.stringify(listeVerisi).replace(/</g, "\\u003c") +
+      "</script>";
+
+    yanitla(res, sayfaKur(meta + "\n" + yapisal, govde));
   } catch (hata) {
     console.error("anasayfaRender", hata);
     yanitla(res, kabuk());

@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+
+# Haberlerin tamamı burada: ana sayfanın HTML gövdesinde liste
+# basmak yerine keşif bu dosyaya bırakıldı.
+Sitemap: https://kastamonuhaber-68645.web.app/sitemap.xml
